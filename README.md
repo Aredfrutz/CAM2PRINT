@@ -1,4 +1,4 @@
-# flutter_application_1
+# CAM2PRINT
 
 A new Flutter project.
 
