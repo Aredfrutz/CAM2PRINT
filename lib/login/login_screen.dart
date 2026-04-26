@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+
 // ✅ This is just the LoginScreen widget - no main() or MyApp needed!
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -32,9 +33,14 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF6C63FF), Colors.white],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            stops: [0.02, 0.32, 1.0],
+            colors: [
+              Color(0xFF7CA8F9), // 2%
+              Color(0xFFB4C4FC), // 32%
+              Color(0xFFFFFFFF), // 100%
+            ],
           ),
         ),
         child: SafeArea(
@@ -56,7 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withValues(alpha: 0.2),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -93,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildLoginForm({required bool isDarkMode}) {
-    Color textColor = isDarkMode ? Colors.white : Colors.black;
+    Color textColor = isDarkMode ? const Color.fromARGB(255, 255, 255, 255) : const Color.fromARGB(255, 0, 0, 0);
     Color inputBgColor = const Color(0xFFEEEEEE);
 
     return Form(
@@ -104,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           Text('Login', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: textColor)),
           const SizedBox(height: 40),
-          Text('Email*', style: TextStyle(color: textColor, fontWeight: FontWeight.w500)),
+          Text('Email', style: TextStyle(color: textColor, fontWeight: FontWeight.w500)),
           const SizedBox(height: 8),
           _buildInputField(controller: _emailController, hint: 'Enter your email', bgColor: inputBgColor, textColor: textColor,
             validator: (value) {
@@ -113,7 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
               return null;
             }),
           const SizedBox(height: 20),
-          Text('Password*', style: TextStyle(color: textColor, fontWeight: FontWeight.w500)),
+          Text('Password', style: TextStyle(color: textColor, fontWeight: FontWeight.w500)),
           const SizedBox(height: 8),
           _buildInputField(controller: _passwordController, hint: 'minimum 8 characters', obscureText: _obscurePassword,
             bgColor: inputBgColor, textColor: textColor,
@@ -205,7 +211,7 @@ class _LoginScreenState extends State<LoginScreen> {
         controller: controller,
         obscureText: obscureText,
         validator: validator,
-        style: TextStyle(color: textColor),
+        style: const TextStyle(color: Colors.black),
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(color: Colors.grey.shade500),
@@ -230,7 +236,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           child: ClipOval(
             child: Image.asset(
-              'assets/logo.jpg',
+              'assets/logo.png',
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
                 return Container(color: Colors.grey[200], child: const Center(child: Icon(Icons.image, size: 80, color: Colors.grey)));

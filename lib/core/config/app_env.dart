@@ -1,33 +1,14 @@
-enum AppFlavor { dev, staging, prod }
-
 class AppEnv {
-  const AppEnv({required this.flavor, required this.apiBaseUrl});
-
-  final AppFlavor flavor;
+  final String name;
   final String apiBaseUrl;
 
-  String get name => flavor.name;
+  AppEnv({required this.name, required this.apiBaseUrl});
 
-  static AppEnv fromDartDefine() {
-    const flavorRaw = String.fromEnvironment('APP_FLAVOR', defaultValue: 'dev');
-    const apiBaseUrl = String.fromEnvironment(
-      'API_BASE_URL',
-      defaultValue: 'https://example.api.local',
+  factory AppEnv.fromDartDefine() {
+    // Default values - can be overridden via --dart-define
+    return AppEnv(
+      name: const String.fromEnvironment('app.name', defaultValue: 'production'),
+      apiBaseUrl: const String.fromEnvironment('app.apiBaseUrl', defaultValue: 'https://api.example.com'),
     );
-
-    return AppEnv(flavor: _mapFlavor(flavorRaw), apiBaseUrl: apiBaseUrl);
-  }
-
-  static AppFlavor _mapFlavor(String value) {
-    switch (value.toLowerCase()) {
-      case 'prod':
-      case 'production':
-        return AppFlavor.prod;
-      case 'staging':
-        return AppFlavor.staging;
-      case 'dev':
-      default:
-        return AppFlavor.dev;
-    }
   }
 }
