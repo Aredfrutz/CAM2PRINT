@@ -10,42 +10,65 @@ class CustomizedOrdersPage extends StatefulWidget {
 class _CustomizedOrdersPageState extends State<CustomizedOrdersPage> {
   String _activeItem = 'Packages';
   bool showTrackSaved = false;
-  bool showRemainingInput = false;
-  
-  // Sample saved orders
+  bool isMoreDropdownOpen = false;
+
+  // Overlay entry for the "More" dropdown menu
+  OverlayEntry? _moreOverlayEntry;
+
+  // State for the Floating Order Details View
+  bool showFloatingOrderDetails = false;
+  Map<String, dynamic>? activeFloatingOrder;
+  bool showRemainingBalanceInput = false;
+
+  // SAVED ORDERS LIST
   final List<Map<String, dynamic>> savedOrders = [
-    {
-      'item': 'Package 1',
-      'type': 'Packages',
-      'date': '2026-01-31',
-      'details': 'Name: Juan, Theme: Birthday, Down Payment: ₱500.00',
-    },
-    {
-      'item': 'Souvenir Order',
-      'type': 'Souvenir',
-      'date': '2026-01-30',
-      'details': 'Name: Maria, Theme: Wedding, Down Payment: ₱300.00',
-    },
+    // Main Categories
+    {'item': 'Package 1', 'commissioned': 'Staff Name', 'branch': 'CAMPO', 'downpayment': '₱ 0.00', 'type': 'Packages'},
+    {'item': 'Souvenir', 'commissioned': 'Staff Name', 'branch': 'CAMPO', 'downpayment': '₱ 0.00', 'type': 'Souvenir'},
+    {'item': 'Invitation', 'commissioned': 'Staff Name', 'branch': 'CAMPO', 'downpayment': '₱ 0.00', 'type': 'Invitation'},
+    {'item': 'Candle', 'commissioned': 'Staff Name', 'branch': 'CAMPO', 'downpayment': '₱ 0.00', 'type': 'Candle'},
+    {'item': 'Ref Magnet', 'commissioned': 'Staff Name', 'branch': 'CAMPO', 'downpayment': '₱ 0.00', 'type': 'Ref Magnet'},
+    
+    // "More" Items
+    {'item': 'T-shirt', 'commissioned': 'Staff Name', 'branch': 'CAMPO', 'downpayment': '₱ 0.00', 'type': 'T-shirt'},
+    {'item': 'Chip Bag', 'commissioned': 'Staff Name', 'branch': 'CAMPO', 'downpayment': '₱ 0.00', 'type': 'Chip Bag'},
+    {'item': 'Button Badge', 'commissioned': 'Staff Name', 'branch': 'CAMPO', 'downpayment': '₱ 0.00', 'type': 'Button Badge'},
+    {'item': 'Button Pin', 'commissioned': 'Staff Name', 'branch': 'CAMPO', 'downpayment': '₱ 0.00', 'type': 'Button Pin'},
+    {'item': 'Party Hat', 'commissioned': 'Staff Name', 'branch': 'CAMPO', 'downpayment': '₱ 0.00', 'type': 'Party Hat'},
+    {'item': 'Jigsaw Puzzle', 'commissioned': 'Staff Name', 'branch': 'CAMPO', 'downpayment': '₱ 0.00', 'type': 'Jigsaw Puzzle'},
+    {'item': 'Banner', 'commissioned': 'Staff Name', 'branch': 'CAMPO', 'downpayment': '₱ 0.00', 'type': 'Banner'},
+    {'item': 'Calendar', 'commissioned': 'Staff Name', 'branch': 'CAMPO', 'downpayment': '₱ 0.00', 'type': 'Calendar'},
+    {'item': 'Hair Brush', 'commissioned': 'Staff Name', 'branch': 'CAMPO', 'downpayment': '₱ 0.00', 'type': 'Hair Brush'},
+    {'item': 'Clock', 'commissioned': 'Staff Name', 'branch': 'CAMPO', 'downpayment': '₱ 0.00', 'type': 'Clock'},
   ];
 
   final List<String> mainTabs = [
-    "Packages", "Souvenir", "Invitation", "Candle", "Ref Magnet"
+    "Packages",
+    "Souvenir",
+    "Invitation",
+    "Candle",
+    "Ref Magnet"
   ];
 
   final List<String> moreItems = [
-    "T-shirt", "Chip Bag", "Button Badge", "Button Pin", "Party Hat",
-    "Jigsaw Puzzle", "Banner", "Calendar", "Hair Brush", "Clock"
+    "T-shirt",
+    "Chip Bag",
+    "Button Badge",
+    "Button Pin",
+    "Party Hat",
+    "Jigsaw Puzzle",
+    "Banner",
+    "Calendar",
+    "Hair Brush",
+    "Clock"
   ];
-
-  bool isMoreDropdownOpen = false;
-  OverlayEntry? _moreOverlayEntry;
 
   void _selectItem(String item) {
     setState(() {
       _activeItem = item;
       _closeMoreMenu();
       showTrackSaved = false;
-      showRemainingInput = false;
+      showFloatingOrderDetails = false;
     });
   }
 
@@ -58,17 +81,19 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPage> {
   }
 
   void _showMoreMenu(BuildContext context) {
-    // Get the position of the button that triggered this
     final RenderBox button = context.findRenderObject() as RenderBox;
-    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-    final Offset buttonPosition = button.localToGlobal(Offset.zero, ancestor: overlay);
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final Offset position = button.localToGlobal(Offset.zero, ancestor: overlay);
 
     _moreOverlayEntry = OverlayEntry(
       builder: (context) => Positioned(
-        // Position exactly under the button
-        top: buttonPosition.dy + button.size.height + 5, 
-        left: buttonPosition.dx, 
-        child: _buildDropdownMenu(),
+        top: position.dy + button.size.height + 5,
+        left: position.dx,
+        child: Material(
+          color: Colors.transparent,
+          child: _buildDropdownMenu(),
+        ),
       ),
     );
 
@@ -97,56 +122,917 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPage> {
           // TOP BAR
           _buildTopBar(),
           const SizedBox(height: 16),
-          
+
           // MAIN CONTENT
           Expanded(
-            child: showTrackSaved 
-                ? _buildTrackSavedView() 
-                : _buildFormView(),
+            child: showFloatingOrderDetails
+                ? _buildFloatingOrderDetailsView()
+                : (showTrackSaved
+                    ? _buildTrackSavedView()
+                    : _buildFormView()),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTopBar() {
-    return Row(
+    Widget _buildFloatingOrderDetailsView() {
+    final isSouvenir = activeFloatingOrder?['item'] == 'Souvenir';
+    final isCandle = activeFloatingOrder?['item'] == 'Candle';
+    final isRefMagnet = activeFloatingOrder?['item'] == 'Ref Magnet';
+    final isTshirtOrChipBag = activeFloatingOrder?['item'] == 'T-shirt' || activeFloatingOrder?['item'] == 'Chip Bag';
+    final isButtonBadge = activeFloatingOrder?['item'] == 'Button Badge';
+    final isButtonPin = activeFloatingOrder?['item'] == 'Button Pin';
+    final isPartyHat = activeFloatingOrder?['item'] == 'Party Hat';
+    final isJigsawPuzzle = activeFloatingOrder?['item'] == 'Jigsaw Puzzle';
+    final isBanner = activeFloatingOrder?['item'] == 'Banner';
+    final isCalendarOrClock = activeFloatingOrder?['item'] == 'Calendar' || activeFloatingOrder?['item'] == 'Clock';
+    final isHairBrush = activeFloatingOrder?['item'] == 'Hair Brush';
+
+    return Stack(
       children: [
-        // Tab Navigation
-        Expanded(
+        GestureDetector(
+          onTap: () => setState(() => showFloatingOrderDetails = false),
+          child: Container(color: Colors.black.withValues(alpha: 0.2)),
+        ),
+        Center(
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            width: double.infinity,
+            constraints: const BoxConstraints(maxWidth: 800),
+            padding: const EdgeInsets.all(24),
+            margin: const EdgeInsets.all(40),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white.withValues(alpha: 0.95),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
             child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ...mainTabs.map((tab) => Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: _buildTabChip(tab),
-                  )),
-                  const SizedBox(width: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "${activeFloatingOrder?['item'] ?? 'Order Details'}",
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2E3A59),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => setState(() => showFloatingOrderDetails = false),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // --- CONDITIONAL LAYOUTS (All readOnly: true) ---
                   
-                  // MORE BUTTON wrapped in Builder to get its specific context
-                  Builder(
-                    builder: (context) => _buildMoreButton(context),
+                  // 1. CANDLE
+                  if (isCandle) ...[
+                    const Text("Details", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                    const SizedBox(height: 8),
+                    TextField(
+                      readOnly: true,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: "Enter order info here.....",
+                        filled: true,
+                        fillColor: const Color(0xFFB0B8D0),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _formRow("Downpayment", "Remaining Balance", readOnly: true),
+                    const SizedBox(height: 20),
+                  ] 
+                  // 2. SOUVENIR
+                  else if (isSouvenir) ...[
+                    _formRow("Name", "Event Date", readOnly: true),
+                    const SizedBox(height: 12),
+                    _formRow("Theme", "Occasion Type", readOnly: true),
+                    const SizedBox(height: 12),
+                    _formRow("Down Payment", "Remaining Balance", readOnly: true),
+                    const SizedBox(height: 20),
+                  ]
+                  // 3. REF MAGNET
+                  else if (isRefMagnet) ...[
+                    _formRow("Name", "Event Date", readOnly: true),
+                    const SizedBox(height: 12),
+                    _formRow("Theme", "Occasion Type", readOnly: true),
+                    const SizedBox(height: 12),
+                    _formRow("Reception Venue", "", readOnly: true),
+                    const SizedBox(height: 12),
+                    _buildTextArea("Additional Details", "Enter any additional details here.....", readOnly: true),
+                    const SizedBox(height: 12),
+                    _formRow("Down Payment", "Remaining Balance", readOnly: true),
+                    const SizedBox(height: 20),
+                  ]
+                  // 4. T-SHIRT & CHIP BAG
+                  else if (isTshirtOrChipBag) ...[
+                    const Text("Details", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                    const SizedBox(height: 8),
+                    TextField(
+                      readOnly: true,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: "Enter details here.....",
+                        filled: true,
+                        fillColor: const Color(0xFFB0B8D0),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Downpayment", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                              const SizedBox(height: 5),
+                              TextField(
+                                readOnly: true,
+                                decoration: InputDecoration(
+                                  hintText: "Amount",
+                                  filled: true,
+                                  fillColor: const Color(0xFFB0B8D0),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Remaining Balance", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                              const SizedBox(height: 5),
+                              TextField(
+                                readOnly: true,
+                                decoration: InputDecoration(
+                                  hintText: "Amount",
+                                  filled: true,
+                                  fillColor: const Color(0xFFB0B8D0),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                  ]
+                  // 5. BUTTON BADGE
+                  else if (isButtonBadge) ...[
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Name", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                        const SizedBox(height: 5),
+                        TextField(
+                          readOnly: true,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: const Color(0xFFB0B8D0),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Details", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                        const SizedBox(height: 5),
+                        TextField(
+                          readOnly: true,
+                          maxLines: 3,
+                          decoration: InputDecoration(
+                            hintText: "Enter details here.....",
+                            filled: true,
+                            fillColor: const Color(0xFFB0B8D0),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Downpayment", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                              const SizedBox(height: 5),
+                              TextField(
+                                readOnly: true,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: const Color(0xFFB0B8D0),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Remaining Balance", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                              const SizedBox(height: 5),
+                              TextField(
+                                readOnly: true,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: const Color(0xFFB0B8D0),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                  ]
+                  // 6. BUTTON PIN
+                  else if (isButtonPin) ...[
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Name", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                        const SizedBox(height: 5),
+                        TextField(
+                          readOnly: true,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: const Color(0xFFB0B8D0),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Details", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                        const SizedBox(height: 5),
+                        TextField(
+                          readOnly: true,
+                          maxLines: 3,
+                          decoration: InputDecoration(
+                            hintText: "Enter details here.....",
+                            filled: true,
+                            fillColor: const Color(0xFFB0B8D0),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Downpayment", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                              const SizedBox(height: 5),
+                              TextField(
+                                readOnly: true,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: const Color(0xFFB0B8D0),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Remaining Balance", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                              const SizedBox(height: 5),
+                              TextField(
+                                readOnly: true,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: const Color(0xFFB0B8D0),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                  ]
+                  // 7. PARTY HAT
+                  else if (isPartyHat) ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Name", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                              const SizedBox(height: 5),
+                              TextField(
+                                readOnly: true,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: const Color(0xFFB0B8D0),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Theme", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                              const SizedBox(height: 5),
+                              TextField(
+                                readOnly: true,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: const Color(0xFFB0B8D0),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Details", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                        const SizedBox(height: 5),
+                        TextField(
+                          readOnly: true,
+                          maxLines: 3,
+                          decoration: InputDecoration(
+                            hintText: "Enter details here.....",
+                            filled: true,
+                            fillColor: const Color(0xFFB0B8D0),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Downpayment", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                              const SizedBox(height: 5),
+                              TextField(
+                                readOnly: true,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: const Color(0xFFB0B8D0),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Remaining Balance", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                              const SizedBox(height: 5),
+                              TextField(
+                                readOnly: true,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: const Color(0xFFB0B8D0),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                  ]
+                  // 8. JIGSAW PUZZLE
+                  else if (isJigsawPuzzle) ...[
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Theme", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                        const SizedBox(height: 5),
+                        TextField(
+                          readOnly: true,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: const Color(0xFFB0B8D0),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Details", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                        const SizedBox(height: 5),
+                        TextField(
+                          readOnly: true,
+                          maxLines: 3,
+                          decoration: InputDecoration(
+                            hintText: "Enter details here.....",
+                            filled: true,
+                            fillColor: const Color(0xFFB0B8D0),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Downpayment", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                              const SizedBox(height: 5),
+                              TextField(
+                                readOnly: true,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: const Color(0xFFB0B8D0),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Remaining Balance", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                              const SizedBox(height: 5),
+                              TextField(
+                                readOnly: true,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: const Color(0xFFB0B8D0),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                  ]
+                  // 9. BANNER
+                  else if (isBanner) ...[
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Name", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                        const SizedBox(height: 5),
+                        TextField(
+                          readOnly: true,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: const Color(0xFFB0B8D0),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Details", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                        const SizedBox(height: 5),
+                        TextField(
+                          readOnly: true,
+                          maxLines: 3,
+                          decoration: InputDecoration(
+                            hintText: "Enter details here.....",
+                            filled: true,
+                            fillColor: const Color(0xFFB0B8D0),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Downpayment", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                              const SizedBox(height: 5),
+                              TextField(
+                                readOnly: true,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: const Color(0xFFB0B8D0),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Remaining Balance", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                              const SizedBox(height: 5),
+                              TextField(
+                                readOnly: true,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: const Color(0xFFB0B8D0),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                  ]
+                  // 10. CALENDAR & CLOCK
+                  else if (isCalendarOrClock) ...[
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Name", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                        const SizedBox(height: 5),
+                        TextField(
+                          readOnly: true,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: const Color(0xFFB0B8D0),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Downpayment", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                              const SizedBox(height: 5),
+                              TextField(
+                                readOnly: true,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: const Color(0xFFB0B8D0),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Remaining Balance", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                              const SizedBox(height: 5),
+                              TextField(
+                                readOnly: true,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: const Color(0xFFB0B8D0),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                  ]
+                  // 11. HAIR BRUSH
+                  else if (isHairBrush) ...[
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Name", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                        const SizedBox(height: 5),
+                        TextField(
+                          readOnly: true,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: const Color(0xFFB0B8D0),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Downpayment", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                              const SizedBox(height: 5),
+                              TextField(
+                                readOnly: true,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: const Color(0xFFB0B8D0),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Remaining Balance", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                              const SizedBox(height: 5),
+                              TextField(
+                                readOnly: true,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: const Color(0xFFB0B8D0),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                  ]
+                  // 12. DEFAULT (Package 1, Invitation, etc.)
+                  else ...[
+                    _formRow("Name", "Event Date", readOnly: true),
+                    const SizedBox(height: 12),
+                    _formRow("Theme", "What Package", readOnly: true),
+                    const SizedBox(height: 12),
+                    _formRow("Reception Venue", "Church Venue", readOnly: true),
+                    const SizedBox(height: 12),
+                    _buildTextArea("Additional Details", "Enter any additional details here.....", readOnly: true),
+                    const SizedBox(height: 12),
+                    _formRow("Down Payment", "Remaining Balance", readOnly: true),
+                    const SizedBox(height: 20),
+                  ],
+
+                  // --- COMMON SECTION: Toggle & Input ---
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text("Uploaded Images", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                            const SizedBox(height: 10),
+                            Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFB0B8D0),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text("Input Remaining Balance?", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                ElevatedButton(
+                                  onPressed: () => setState(() => showRemainingBalanceInput = true),
+                                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00C853)),
+                                  child: const Text("YES", style: TextStyle(color: Colors.white)),
+                                ),
+                                const SizedBox(width: 10),
+                                ElevatedButton(
+                                  onPressed: () => setState(() => showRemainingBalanceInput = false),
+                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                  child: const Text("NO", style: TextStyle(color: Colors.white)),
+                                ),
+                              ],
+                            ),
+                            if (showRemainingBalanceInput) ...[
+                              const SizedBox(height: 15),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFFD6E4FF), Color(0xFFFFFFFF)],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4))
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text("Remaining Balance", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF2E3A59))),
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(6),
+                                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 2))],
+                                      ),
+                                      // THIS FIELD REMAINS EDITABLE
+                                      child: const TextField(
+                                        decoration: InputDecoration(
+                                          border: InputBorder.none,
+                                          contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                                          hintText: '0.00',
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Center(
+                                      child: ElevatedButton(
+                                        onPressed: () {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('Balance Saved'), backgroundColor: Color(0xFF00C853)),
+                                          );
+                                          setState(() => showRemainingBalanceInput = false);
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFF00C853),
+                                          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                          elevation: 4,
+                                        ),
+                                        child: const Text("SAVE", style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           ),
         ),
+      ],
+    );
+  }
+
+   Widget _buildTopBar() {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white, width: 1),
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Calculate width for each tab to fill the space
+                // We have 6 items (5 tabs + More button)
+                double itemWidth = constraints.maxWidth / 6; 
+                
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      ...mainTabs.map((tab) => SizedBox(
+                            width: itemWidth,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 2),
+                              child: _buildTabChip(tab),
+                            ),
+                          )),
+                      SizedBox(
+                        width: itemWidth,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: Builder(
+                            builder: (context) => _buildMoreButton(context),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
         const SizedBox(width: 12),
-        
-        // Track Saved Orders Button
         GestureDetector(
           onTap: () {
             setState(() {
               showTrackSaved = !showTrackSaved;
+              showFloatingOrderDetails = false;
               _closeMoreMenu();
             });
           },
@@ -169,16 +1055,18 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPage> {
       ],
     );
   }
-
   Widget _buildMoreButton(BuildContext context) {
     bool isMoreActive = moreItems.contains(_activeItem);
     return InkWell(
       onTap: () => _toggleMoreMenu(context),
       borderRadius: BorderRadius.circular(15),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isMoreActive ? const Color(0xFF373E4E) : Colors.transparent,
+          color: isMoreActive
+              ? const Color(0xFF373E4E)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(15),
         ),
         child: Row(
@@ -192,7 +1080,9 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPage> {
               ),
             ),
             Icon(
-              isMoreDropdownOpen ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+              isMoreDropdownOpen
+                  ? Icons.arrow_drop_up
+                  : Icons.arrow_drop_down,
               color: isMoreActive ? Colors.white : Colors.black87,
             ),
           ],
@@ -207,22 +1097,32 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPage> {
       borderRadius: BorderRadius.circular(12),
       color: Colors.white,
       child: Container(
-        width: 180, // Fixed width for the dropdown
+        width: 160,
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: moreItems.map((item) {
+            bool isSelected = item == _activeItem;
             return InkWell(
               onTap: () => _selectItem(item),
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Colors.grey.shade300
+                      : Colors.transparent,
+                ),
                 child: Text(
                   item,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF2E3A59),
+                    color: const Color(0xFF2E3A59),
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
                   ),
                 ),
               ),
@@ -239,9 +1139,8 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPage> {
       onTap: () => _selectItem(label),
       child: Chip(
         label: Text(label),
-        backgroundColor: isActive
-            ? const Color(0xFF373E4E)
-            : Colors.transparent,
+        backgroundColor:
+            isActive ? const Color(0xFF373E4E) : Colors.transparent,
         labelStyle: TextStyle(
           color: isActive ? Colors.white : Colors.black87,
           fontWeight: FontWeight.w600,
@@ -258,11 +1157,11 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPage> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: Colors.white.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -272,9 +1171,10 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title
             Text(
-              moreItems.contains(_activeItem) ? 'Custom Order: $_activeItem' : _activeItem,
+              moreItems.contains(_activeItem)
+                  ? 'Custom Order: $_activeItem'
+                  : _activeItem,
               style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -282,56 +1182,51 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPage> {
               ),
             ),
             const SizedBox(height: 20),
-            
-            // Dynamic Form based on selected item
+
+            // Render the specific item form
             _getFormForItem(_activeItem),
-            
-            const SizedBox(height: 20),
-            
-            // Common: Downpayment and Balance
-            _formRow("Downpayment", "Remaining Balance"),
-            
-            const SizedBox(height: 20),
-            
-            // Remaining Balance Toggle
-            Row(
-              children: [
-                const Text("Input Remaining Balance?", 
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF2E3A59))),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                ElevatedButton(
-                  onPressed: () => setState(() => showRemainingInput = true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00C853),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                  ),
-                  child: const Text("YES", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: () => setState(() => showRemainingInput = false),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                  ),
-                  child: const Text("NO", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-            
-            if (showRemainingInput) ...[
-              const SizedBox(height: 10),
-              _buildInput("Remaining Balance"),
+
+            // Only show standard downpayment row if it's a MAIN item
+            // Exclude Packages, Invitation, Souvenir (they have own layouts)
+            // Exclude all "More" items (Candle, T-shirt, etc.) because they handle it themselves
+            if (_activeItem != 'Packages' &&
+                _activeItem != 'Invitation' &&
+                _activeItem != 'Souvenir' &&
+                _activeItem != 'Candle' &&
+                _activeItem != 'T-shirt' &&
+                _activeItem != 'Chip Bag' &&
+                _activeItem != 'Button Badge' &&
+                _activeItem != 'Button Pin' &&
+                _activeItem != 'Party Hat' &&
+                _activeItem != 'Jigsaw Puzzle' &&
+                _activeItem != 'Banner' &&
+                _activeItem != 'Calendar' &&
+                _activeItem != 'Hair Brush' &&
+                _activeItem != 'Clock' &&
+                _activeItem != 'Ref Magnet') ...[
+              const SizedBox(height: 20),
+              _formRow("Downpayment", "Remaining Balance"),
             ],
-            
+
             const SizedBox(height: 30),
-            
-            // Bottom Section: Image Upload and Save Button
-            _buildBottomSection(),
+
+            // Only show bottom section (Uploads/Save) for Main items
+            if (_activeItem != 'Packages' &&
+                _activeItem != 'Invitation' &&
+                _activeItem != 'Souvenir' &&
+                _activeItem != 'Candle' &&
+                _activeItem != 'T-shirt' &&
+                _activeItem != 'Chip Bag' &&
+                _activeItem != 'Button Badge' &&
+                _activeItem != 'Button Pin' &&
+                _activeItem != 'Party Hat' &&
+                _activeItem != 'Jigsaw Puzzle' &&
+                _activeItem != 'Banner' &&
+                _activeItem != 'Calendar' &&
+                _activeItem != 'Hair Brush' &&
+                _activeItem != 'Clock' &&
+                _activeItem != 'Ref Magnet')
+              _buildBottomSection(),
           ],
         ),
       ),
@@ -339,10 +1234,13 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPage> {
   }
 
   Widget _buildBottomSection() {
-    // Determine max images based on item type
     int maxImages = 1;
-    if (_activeItem == 'Packages' || _activeItem == 'Invitation' || _activeItem == 'Ref Magnet' ||
-        _activeItem == 'T-shirt' || _activeItem == 'Chip Bag' || _activeItem == 'Party Hat' || 
+    if (_activeItem == 'Packages' ||
+        _activeItem == 'Invitation' ||
+        _activeItem == 'Ref Magnet' ||
+        _activeItem == 'T-shirt' ||
+        _activeItem == 'Chip Bag' ||
+        _activeItem == 'Party Hat' ||
         _activeItem == 'Jigsaw Puzzle') {
       maxImages = 5;
     } else if (_activeItem == 'Clock') {
@@ -352,68 +1250,73 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Image Upload Label
-        const Text("Upload Image", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+        const Text("Upload Image",
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2E3A59))),
         const SizedBox(height: 10),
-
-        // Row containing Image Uploaders and Save Button
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            // Left Side: Image Uploaders
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Grid of dashed boxes
                   Wrap(
                     spacing: 15,
                     runSpacing: 10,
-                    children: List.generate(maxImages > 5 ? 5 : maxImages, (index) {
+                    children:
+                        List.generate(maxImages > 5 ? 5 : maxImages, (index) {
                       return Container(
                         width: 60,
                         height: 60,
-                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8)),
                         child: CustomPaint(
                           painter: DashedBorderPainter(),
                           child: const Center(
-                            child: Icon(Icons.add, color: Colors.black, size: 30),
+                            child: Icon(Icons.add,
+                                color: Colors.black, size: 30),
                           ),
                         ),
                       );
                     }),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    "Choose Files  No file chosen",
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
+                  const Text("Choose Files  No file chosen",
+                      style: TextStyle(fontSize: 12, color: Colors.grey)),
                 ],
               ),
             ),
-            
             const SizedBox(width: 20),
-            
-            // Right Side: Save Button
             ElevatedButton(
               onPressed: () {
                 setState(() {
                   savedOrders.add({
                     'item': _activeItem,
-                    'type': moreItems.contains(_activeItem) ? 'More Item' : _activeItem,
-                    'date': DateTime.now().toString().split(' ')[0],
-                    'details': 'Saved order details...',
+                    'type': moreItems.contains(_activeItem)
+                        ? 'More Item'
+                        : _activeItem,
+                    'commissioned': 'Staff Name',
+                    'branch': 'CAMPO',
+                    'downpayment': '₱ 0.00',
                   });
                   showTrackSaved = true;
                 });
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00C853),
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text("SAVE", 
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+              child: const Text("SAVE",
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18)),
             ),
           ],
         ),
@@ -422,88 +1325,1082 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPage> {
   }
 
   Widget _getFormForItem(String item) {
-    switch (item) {
-      case 'Packages':
-        return _buildPackagesForm();
-      case 'Souvenir':
-        return _buildSouvenirForm();
-      case 'Invitation':
-        return _buildInvitationForm();
-      case 'Candle':
-        return _buildCandleForm();
-      case 'Ref Magnet':
-        return _buildRefMagnetForm();
-      case 'T-shirt':
-        return _buildTshirtForm();
-      case 'Chip Bag':
-        return _buildChipBagForm();
-      case 'Button Badge':
-        return _buildButtonBadgeForm();
-      case 'Button Pin':
-        return _buildButtonPinForm();
-      case 'Party Hat':
-        return _buildPartyHatForm();
-      case 'Jigsaw Puzzle':
-        return _buildJigsawPuzzleForm();
-      case 'Banner':
-        return _buildBannerForm();
-      case 'Calendar':
-        return _buildCalendarForm();
-      case 'Hair Brush':
-        return _buildHairBrushForm();
-      case 'Clock':
-        return _buildClockForm();
-      default:
-        return const SizedBox();
+    if (item == 'Packages' || item == 'Invitation') {
+      return _buildPackagesOrInvitationMainForm();
     }
+
+    if (item == 'Souvenir') {
+      return _buildSouvenirMainForm();
+    }
+
+    if (item == 'Candle') return _buildCandleForm();
+    if (item == 'T-shirt') return _buildTshirtForm();
+    if (item == 'Chip Bag') return _buildChipBagForm();
+    if (item == 'Button Badge') return _buildButtonBadgeForm();
+    if (item == 'Button Pin') return _buildButtonPinForm();
+    if (item == 'Party Hat') return _buildPartyHatForm();
+    if (item == 'Jigsaw Puzzle') return _buildJigsawPuzzleForm();
+    if (item == 'Banner') return _buildBannerForm();
+    if (item == 'Calendar') return _buildCalendarForm();
+    if (item == 'Hair Brush') return _buildHairBrushForm();
+    if (item == 'Clock') return _buildClockForm();
+    if (item == 'Ref Magnet') return _buildRefMagnetForm();
+
+    return const SizedBox();
   }
 
-  Widget _buildPackagesForm() {
+  Widget _buildPackagesOrInvitationMainForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _formRow("Name", "Date of Occasion/Event"),
+        _formRow("Name", "Event Date"),
         const SizedBox(height: 12),
-        _formRow("Theme", "Type of Occasion/Event"),
+        _formRow("Theme", "What Package"),
         const SizedBox(height: 12),
         _formRow("Reception Venue", "Church Venue"),
         const SizedBox(height: 12),
-        _buildTextArea("Additional Info", "Enter any additional details here....."),
+        _buildTextArea(
+            "Additional Details", "Enter any additional details here....."),
+        const SizedBox(height: 12),
+        _formRow("Down Payment", "Remaining Balance"),
+        const SizedBox(height: 20),
+           Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Uploaded Images",
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF2E3A59))),
+                  const SizedBox(height: 10),
+                  // REPLACED GRAY BOX WITH DASHED BOX:
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+                    child: CustomPaint(
+                      painter: DashedBorderPainter(),
+                      child: const Center(
+                          child: Icon(Icons.add, color: Colors.black, size: 30)),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text("Choose Files  No file chosen",
+                      style: TextStyle(fontSize: 12, color: Colors.grey)),
+                ],
+              ),
+            ),
+            const Spacer(),
+          ],
+        ),
+        const SizedBox(height: 30),
+        Center(
+          child: ElevatedButton(
+            onPressed: () {
+              setState(() {
+                savedOrders.add({
+                  'item': _activeItem,
+                  'type': moreItems.contains(_activeItem)
+                      ? 'More Item'
+                      : _activeItem,
+                  'commissioned': 'Staff Name',
+                  'branch': 'CAMPO',
+                  'downpayment': '₱ 0.00',
+                });
+                showTrackSaved = true;
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00C853),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("SAVE",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18)),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildSouvenirForm() {
+  Widget _buildSouvenirMainForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _formRow("Name", "Date of Occasion/Event"),
         const SizedBox(height: 12),
         _formRow("Theme", "Type of Occasion/Event"),
+        const SizedBox(height: 20),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Uploaded Images",
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF2E3A59))),
+                  const SizedBox(height: 10),
+                  // REPLACED GRAY BOX WITH DASHED BOX:
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+                    child: CustomPaint(
+                      painter: DashedBorderPainter(),
+                      child: const Center(
+                          child: Icon(Icons.add, color: Colors.black, size: 30)),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text("Choose Files  No file chosen",
+                      style: TextStyle(fontSize: 12, color: Colors.grey)),
+                ],
+              ),
+            ),
+            const Spacer(),
+          ],
+        ),
+        const SizedBox(height: 30),
+        Center(
+          child: ElevatedButton(
+            onPressed: () {
+              setState(() {
+                savedOrders.add({
+                  'item': _activeItem,
+                  'type': moreItems.contains(_activeItem)
+                      ? 'More Item'
+                      : _activeItem,
+                  'commissioned': 'Staff Name',
+                  'branch': 'CAMPO',
+                  'downpayment': '₱ 0.00',
+                });
+                showTrackSaved = true;
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00C853),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("SAVE",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18)),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildInvitationForm() {
+    Widget _buildCandleForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _formRow("Name", "Date of Occasion/Event"),
-        const SizedBox(height: 12),
-        _formRow("Theme", "Type of Occasion/Event"),
-        const SizedBox(height: 12),
-        _formRow("Reception Venue", "Church Venue"),
-        const SizedBox(height: 12),
-        _buildTextArea("Additional Info", "Enter any additional details here....."),
+        // 1. Info Label
+        const Text("Info",
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2E3A59))),
+        const SizedBox(height: 8),
+        // 2. Info Text Area
+        TextField(
+          maxLines: 3,
+          decoration: InputDecoration(
+            hintText: "Enter order info here.....",
+            filled: true,
+            fillColor: const Color(0xFFB0B8D0),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          ),
+        ),
+        const SizedBox(height: 20),
+        // 3. Downpayment Row
+        _formRow("Downpayment", "Remaining Balance"),
+        const SizedBox(height: 20),
+        
+        // 4. Upload Image Section
+        const Text("Upload Image",
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2E3A59))),
+        const SizedBox(height: 10),
+        // The Dashed Box
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+          child: CustomPaint(
+            painter: DashedBorderPainter(),
+            child: const Center(
+                child: Icon(Icons.add, color: Colors.black, size: 30)),
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text("Choose Files  No file chosen",
+            style: TextStyle(fontSize: 12, color: Colors.grey)),
+
+        const SizedBox(height: 30),
+        // 5. Save Button
+        Center(
+          child: ElevatedButton(
+            onPressed: () {
+              setState(() {
+                savedOrders.add({
+                  'item': _activeItem,
+                  'commissioned': 'Staff Name',
+                  'branch': 'CAMPO',
+                  'downpayment': '₱ 0.00',
+                  'type': 'Candle'
+                });
+                showTrackSaved = true;
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00C853),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("SAVE",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18)),
+          ),
+        )
       ],
     );
   }
 
-  Widget _buildCandleForm() {
+    Widget _buildTshirtForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 1. Details
+        const Text("Details",
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2E3A59))),
+        const SizedBox(height: 8),
+        TextField(
+          decoration: InputDecoration(
+            hintText: "Information",
+            filled: true,
+            fillColor: const Color(0xFFB0B8D0),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // 2. Additional Custom Order
+        const Text("Additional Custom Order",
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2E3A59))),
+        const SizedBox(height: 8),
+        TextField(
+          maxLines: 3,
+          decoration: InputDecoration(
+            hintText: "Enter any additional custom order here.....",
+            filled: true,
+            fillColor: const Color(0xFFB0B8D0),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          ),
+        ),
+        const SizedBox(height: 20),
+        
+        // 3. Downpayment & Balance
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Downpayment",
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                  const SizedBox(height: 5),
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: "Amount",
+                      filled: true,
+                      fillColor: const Color(0xFFB0B8D0),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Balance after Downpayment",
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                  const SizedBox(height: 5),
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: "Amount",
+                      filled: true,
+                      fillColor: const Color(0xFFB0B8D0),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // 4. Upload Image (5 Boxes)
+        const Text("Upload Image",
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2E3A59))),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 15,
+          runSpacing: 10,
+          children: List.generate(5, (index) {
+            return Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+              child: CustomPaint(
+                painter: DashedBorderPainter(),
+                child: const Center(
+                  child: Icon(Icons.add, color: Colors.black, size: 30),
+                ),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 8),
+        const Text("Choose Files  No file chosen",
+            style: TextStyle(fontSize: 12, color: Colors.grey)),
+
+        const SizedBox(height: 30),
+        // 5. Save Button
+        Center(
+          child: ElevatedButton(
+            onPressed: () {
+              setState(() {
+                savedOrders.add({
+                  'item': _activeItem,
+                  'commissioned': 'Staff Name',
+                  'branch': 'CAMPO',
+                  'downpayment': '₱ 0.00',
+                  'type': 'T-shirt'
+                });
+                showTrackSaved = true;
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00C853),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("SAVE",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18)),
+          ),
+        ),
+      ],
+    );
+  }
+
+
+  Widget _buildChipBagForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 1. Details
+        const Text("Details",
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2E3A59))),
+        const SizedBox(height: 8),
+        TextField(
+          decoration: InputDecoration(
+            hintText: "Information",
+            filled: true,
+            fillColor: const Color(0xFFB0B8D0),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // 2. Additional Custom Order
+        const Text("Additional Custom Order",
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2E3A59))),
+        const SizedBox(height: 8),
+        TextField(
+          maxLines: 3,
+          decoration: InputDecoration(
+            hintText: "Enter any additional custom order here.....",
+            filled: true,
+            fillColor: const Color(0xFFB0B8D0),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          ),
+        ),
+        const SizedBox(height: 20),
+        
+        // 3. Downpayment & Balance
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Downpayment",
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                  const SizedBox(height: 5),
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: "Amount",
+                      filled: true,
+                      fillColor: const Color(0xFFB0B8D0),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Balance after Downpayment",
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+                  const SizedBox(height: 5),
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: "Amount",
+                      filled: true,
+                      fillColor: const Color(0xFFB0B8D0),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // 4. Upload Image (5 Boxes)
+        const Text("Upload Image",
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2E3A59))),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 15,
+          runSpacing: 10,
+          children: List.generate(5, (index) {
+            return Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+              child: CustomPaint(
+                painter: DashedBorderPainter(),
+                child: const Center(
+                  child: Icon(Icons.add, color: Colors.black, size: 30),
+                ),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 8),
+        const Text("Choose Files  No file chosen",
+            style: TextStyle(fontSize: 12, color: Colors.grey)),
+
+        const SizedBox(height: 30),
+        // 5. Save Button
+        Center(
+          child: ElevatedButton(
+            onPressed: () {
+              setState(() {
+                savedOrders.add({
+                  'item': _activeItem,
+                  'commissioned': 'Staff Name',
+                  'branch': 'CAMPO',
+                  'downpayment': '₱ 0.00',
+                  'type': 'T-shirt'
+                });
+                showTrackSaved = true;
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00C853),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("SAVE",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18)),
+          ),
+        ),
+      ],
+    );
+  }
+
+
+  Widget _buildButtonBadgeForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildInput("Name"),
+        const SizedBox(height: 12),
+        _buildTextArea("Details", "Enter details here....."),
+        const SizedBox(height: 20),
+        _formRow("Downpayment", "Remaining Balance"),
+        const SizedBox(height: 20),
+        const Text("Upload Image",
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2E3A59))),
+        const SizedBox(height: 8),
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+          child: CustomPaint(
+            painter: DashedBorderPainter(),
+            child: const Center(
+                child: Icon(Icons.add, color: Colors.black, size: 30)),
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text("Choose Files  No file chosen",
+            style: TextStyle(fontSize: 12, color: Colors.grey)),
+        const SizedBox(height: 30),
+        Center(
+          child: ElevatedButton(
+            onPressed: () {
+              setState(() {
+                savedOrders.add({
+                  'item': _activeItem,
+                  'commissioned': 'Staff Name',
+                  'branch': 'CAMPO',
+                  'downpayment': '₱ 0.00',
+                  'type': 'Button Badge'
+                });
+                showTrackSaved = true;
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00C853),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("SAVE",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildButtonPinForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildInput("Name"),
+        const SizedBox(height: 12),
+        _buildTextArea("Details", "Enter details here....."),
+        const SizedBox(height: 20),
+        _formRow("Downpayment", "Remaining Balance"),
+        const SizedBox(height: 20),
+        const Text("Upload Image",
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2E3A59))),
+        const SizedBox(height: 8),
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+          child: CustomPaint(
+            painter: DashedBorderPainter(),
+            child: const Center(
+                child: Icon(Icons.add, color: Colors.black, size: 30)),
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text("Choose Files  No file chosen",
+            style: TextStyle(fontSize: 12, color: Colors.grey)),
+        const SizedBox(height: 30),
+        Center(
+          child: ElevatedButton(
+            onPressed: () {
+              setState(() {
+                savedOrders.add({
+                  'item': _activeItem,
+                  'commissioned': 'Staff Name',
+                  'branch': 'CAMPO',
+                  'downpayment': '₱ 0.00',
+                  'type': 'Button Pin'
+                });
+                showTrackSaved = true;
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00C853),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("SAVE",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPartyHatForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildInput("Name"),
+        const SizedBox(height: 12),
+        _buildInput("Theme"),
+        const SizedBox(height: 12),
+        _buildTextArea("Additional Info", "Enter additional info here....."),
+        const SizedBox(height: 20),
+        _formRow("Downpayment", "Remaining Balance"),
+        const SizedBox(height: 20),
+        const Text("Upload Image",
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2E3A59))),
+        const SizedBox(height: 8),
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+          child: CustomPaint(
+            painter: DashedBorderPainter(),
+            child: const Center(
+                child: Icon(Icons.add, color: Colors.black, size: 30)),
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text("Choose Files  No file chosen",
+            style: TextStyle(fontSize: 12, color: Colors.grey)),
+        const SizedBox(height: 30),
+        Center(
+          child: ElevatedButton(
+            onPressed: () {
+              setState(() {
+                savedOrders.add({
+                  'item': _activeItem,
+                  'commissioned': 'Staff Name',
+                  'branch': 'CAMPO',
+                  'downpayment': '₱ 0.00',
+                  'type': 'Party Hat'
+                });
+                showTrackSaved = true;
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00C853),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("SAVE",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildJigsawPuzzleForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildInput("Theme"),
+        const SizedBox(height: 12),
+        _buildTextArea("Info", "Enter order info here....."),
+        const SizedBox(height: 20),
+        _formRow("Downpayment", "Remaining Balance"),
+        const SizedBox(height: 20),
+        const Text("Upload Image",
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2E3A59))),
+        const SizedBox(height: 8),
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+          child: CustomPaint(
+            painter: DashedBorderPainter(),
+            child: const Center(
+                child: Icon(Icons.add, color: Colors.black, size: 30)),
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text("Choose Files  No file chosen",
+            style: TextStyle(fontSize: 12, color: Colors.grey)),
+        const SizedBox(height: 30),
+        Center(
+          child: ElevatedButton(
+            onPressed: () {
+              setState(() {
+                savedOrders.add({
+                  'item': _activeItem,
+                  'commissioned': 'Staff Name',
+                  'branch': 'CAMPO',
+                  'downpayment': '₱ 0.00',
+                  'type': 'Jigsaw Puzzle'
+                });
+                showTrackSaved = true;
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00C853),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("SAVE",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBannerForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildTextArea("Info", "Enter order info here....."),
+        const SizedBox(height: 12),
+        _buildInput("Theme"),
+        const SizedBox(height: 20),
+        _formRow("Downpayment", "Remaining Balance"),
+        const SizedBox(height: 20),
+        const Text("Upload Image",
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2E3A59))),
+        const SizedBox(height: 8),
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+          child: CustomPaint(
+            painter: DashedBorderPainter(),
+            child: const Center(
+                child: Icon(Icons.add, color: Colors.black, size: 30)),
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text("Choose Files  No file chosen",
+            style: TextStyle(fontSize: 12, color: Colors.grey)),
+        const SizedBox(height: 30),
+        Center(
+          child: ElevatedButton(
+            onPressed: () {
+              setState(() {
+                savedOrders.add({
+                  'item': _activeItem,
+                  'commissioned': 'Staff Name',
+                  'branch': 'CAMPO',
+                  'downpayment': '₱ 0.00',
+                  'type': 'Banner'
+                });
+                showTrackSaved = true;
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00C853),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("SAVE",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCalendarForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildInput("Name"),
+        const SizedBox(height: 12),
+        _buildTextArea("Additional Info", "Enter additional info here....."),
+        const SizedBox(height: 20),
+        _formRow("Downpayment", "Remaining Balance"),
+        const SizedBox(height: 20),
+        const Text("Upload Image",
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2E3A59))),
+        const SizedBox(height: 8),
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+          child: CustomPaint(
+            painter: DashedBorderPainter(),
+            child: const Center(
+                child: Icon(Icons.add, color: Colors.black, size: 30)),
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text("Choose Files  No file chosen",
+            style: TextStyle(fontSize: 12, color: Colors.grey)),
+        const SizedBox(height: 30),
+        Center(
+          child: ElevatedButton(
+            onPressed: () {
+              setState(() {
+                savedOrders.add({
+                  'item': _activeItem,
+                  'commissioned': 'Staff Name',
+                  'branch': 'CAMPO',
+                  'downpayment': '₱ 0.00',
+                  'type': 'Calendar'
+                });
+                showTrackSaved = true;
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00C853),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("SAVE",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHairBrushForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildInput("Name"),
+        const SizedBox(height: 20),
+        _formRow("Downpayment", "Remaining Balance"),
+        const SizedBox(height: 20),
+        const Text("Upload Image",
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2E3A59))),
+        const SizedBox(height: 8),
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+          child: CustomPaint(
+            painter: DashedBorderPainter(),
+            child: const Center(
+                child: Icon(Icons.add, color: Colors.black, size: 30)),
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text("Choose Files  No file chosen",
+            style: TextStyle(fontSize: 12, color: Colors.grey)),
+        const SizedBox(height: 30),
+        Center(
+          child: ElevatedButton(
+            onPressed: () {
+              setState(() {
+                savedOrders.add({
+                  'item': _activeItem,
+                  'commissioned': 'Staff Name',
+                  'branch': 'CAMPO',
+                  'downpayment': '₱ 0.00',
+                  'type': 'Hair Brush'
+                });
+                showTrackSaved = true;
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00C853),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("SAVE",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildClockForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildInput("Name"),
+        const SizedBox(height: 20),
+        _formRow("Downpayment", "Remaining Balance"),
+        const SizedBox(height: 20),
+        const Text("Upload Image",
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2E3A59))),
+        const SizedBox(height: 8),
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+          child: CustomPaint(
+            painter: DashedBorderPainter(),
+            child: const Center(
+                child: Icon(Icons.add, color: Colors.black, size: 30)),
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text("Choose Files  No file chosen",
+            style: TextStyle(fontSize: 12, color: Colors.grey)),
+        const SizedBox(height: 30),
+        Center(
+          child: ElevatedButton(
+            onPressed: () {
+              setState(() {
+                savedOrders.add({
+                  'item': _activeItem,
+                  'commissioned': 'Staff Name',
+                  'branch': 'CAMPO',
+                  'downpayment': '₱ 0.00',
+                  'type': 'Clock'
+                });
+                showTrackSaved = true;
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00C853),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("SAVE",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18)),
+          ),
+        ),
       ],
     );
   }
@@ -518,132 +2415,92 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPage> {
         const SizedBox(height: 12),
         _formRow("Reception Venue", ""),
         const SizedBox(height: 12),
-        _buildTextArea("Additional Info", "Enter any additional details here....."),
+        _buildTextArea(
+            "Additional Info", "Enter any additional details here....."),
+        const SizedBox(height: 20),
+        _formRow("Downpayment", "Remaining Balance"),
+        const SizedBox(height: 20),
+        
+        // Upload Section
+        const Text("Upload Image",
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2E3A59))),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 15,
+          runSpacing: 10,
+          children: List.generate(5, (index) {
+            return Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+              child: CustomPaint(
+                painter: DashedBorderPainter(),
+                child: const Center(
+                  child: Icon(Icons.add, color: Colors.black, size: 30),
+                ),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 8),
+        const Text("Choose Files  No file chosen",
+            style: TextStyle(fontSize: 12, color: Colors.grey)),
+            
+        const SizedBox(height: 30),
+        // Save Button
+        Center(
+          child: ElevatedButton(
+            onPressed: () {
+              setState(() {
+                savedOrders.add({
+                  'item': _activeItem,
+                  'commissioned': 'Staff Name',
+                  'branch': 'CAMPO',
+                  'downpayment': '₱ 0.00',
+                  'type': 'Ref Magnet'
+                });
+                showTrackSaved = true;
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00C853),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("SAVE",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18)),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildTshirtForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildTextArea("Info", "Enter order info here....."),
-      ],
-    );
-  }
-
-  Widget _buildChipBagForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildTextArea("Info", "Enter order info here....."),
-      ],
-    );
-  }
-
-  Widget _buildButtonBadgeForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildInput("Name"),
-        const SizedBox(height: 12),
-        _buildTextArea("Additional Info", "Enter additional info here....."),
-      ],
-    );
-  }
-
-  Widget _buildButtonPinForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildInput("Name"),
-        const SizedBox(height: 12),
-        _buildTextArea("Additional Info", "Enter additional info here....."),
-      ],
-    );
-  }
-
-  Widget _buildPartyHatForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildInput("Name"),
-        const SizedBox(height: 12),
-        _buildInput("Theme"),
-        const SizedBox(height: 12),
-        _buildTextArea("Additional Info", "Enter additional info here....."),
-      ],
-    );
-  }
-
-  Widget _buildJigsawPuzzleForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildInput("Theme"),
-        const SizedBox(height: 12),
-        _buildTextArea("Info", "Enter order info here....."),
-      ],
-    );
-  }
-
-  Widget _buildBannerForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildTextArea("Info", "Enter order info here....."),
-        const SizedBox(height: 12),
-        _buildInput("Theme"),
-      ],
-    );
-  }
-
-  Widget _buildCalendarForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildInput("Name"),
-        const SizedBox(height: 12),
-        _buildTextArea("Additional Info", "Enter additional info here....."),
-      ],
-    );
-  }
-
-  Widget _buildHairBrushForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildInput("Name"),
-      ],
-    );
-  }
-
-  Widget _buildClockForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildInput("Name"),
-      ],
-    );
-  }
-
-  Widget _formRow(String leftLabel, String rightLabel) {
+  Widget _formRow(String leftLabel, String rightLabel, {bool readOnly = false}) {
     return Row(
       children: [
-        Expanded(child: _buildInput(leftLabel)),
+        Expanded(child: _buildInput(leftLabel, readOnly: readOnly)),
         const SizedBox(width: 12),
-        Expanded(child: rightLabel.isEmpty ? const SizedBox.shrink() : _buildInput(rightLabel)),
+        Expanded(child: rightLabel.isEmpty ? const SizedBox.shrink() : _buildInput(rightLabel, readOnly: readOnly)),
       ],
     );
   }
 
-  Widget _buildInput(String label) {
+  Widget _buildInput(String label, {bool readOnly = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
         const SizedBox(height: 5),
         TextField(
+          readOnly: readOnly,
           decoration: InputDecoration(
             hintText: label == "Date of Occasion/Event" ? "mm/dd/yyyy" : null,
             filled: true,
@@ -659,13 +2516,14 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPage> {
     );
   }
 
-  Widget _buildTextArea(String label, String hint) {
+  Widget _buildTextArea(String label, String hint, {bool readOnly = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
         const SizedBox(height: 5),
         TextField(
+          readOnly: readOnly,
           maxLines: 3,
           decoration: InputDecoration(
             hintText: hint,
@@ -684,45 +2542,57 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPage> {
 
   Widget _buildTrackSavedView() {
     return Container(
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.5),
+        color: Colors.white.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Track Saved Orders",
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2E3A59),
-            ),
-          ),
-          const SizedBox(height: 20),
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            padding:
+                const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
             decoration: const BoxDecoration(
-              color: Color(0xFF373E4E),
+              color: Color(0xFF4B5580),
               borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
               ),
             ),
             child: Row(
               children: const [
-                Expanded(child: Text("Item", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600))),
-                Expanded(child: Text("Type", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600))),
-                Expanded(child: Text("Date Saved", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600))),
-                Expanded(child: Text("Details", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600))),
+                Expanded(
+                    child: Text("Item",
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600))),
+                Expanded(
+                    child: Text("Commissioned by",
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600))),
+                Expanded(
+                    child: Text("Shop Branch",
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600))),
+                Expanded(
+                    child: Text("Downpayment",
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600))),
+                Expanded(
+                    child: Center(
+                        child: Text("Detailed Information",
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600)))),
               ],
             ),
           ),
@@ -732,37 +2602,72 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPage> {
               itemBuilder: (context, index) {
                 final order = savedOrders[index];
                 return Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 12, horizontal: 16),
                   decoration: BoxDecoration(
-                    border: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.1))),
+                    color: index % 2 == 0
+                        ? Colors.white
+                        : const Color(0xFFE8F0FE),
+                    border: Border(
+                      bottom: BorderSide(
+                          color: const Color(0xFFB0C4DE), width: 1),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      Expanded(child: Text(order['item']!, style: const TextStyle(fontWeight: FontWeight.w500))),
                       Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF55A888).withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            order['type']!,
-                            style: const TextStyle(
-                              color: Color(0xFF55A888),
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
+                          child: Text(order['item']!,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w500))),
+                      Expanded(child: Text(order['commissioned']!)),
+                      Expanded(child: Text(order['branch']!)),
+                      Expanded(child: Text(order['downpayment']!)),
+                      Expanded(
+                        child: Center(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              // Updated Condition: Include Party Hat
+                              if (order['item'] == 'Package 1' ||
+                                  order['item'] == 'Invitation' ||
+                                  order['item'] == 'Souvenir' ||
+                                  order['item'] == 'Candle' ||
+                                  order['item'] == 'Ref Magnet' ||
+                                  order['item'] == 'T-shirt' ||
+                                  order['item'] == 'Chip Bag' ||
+                                  order['item'] == 'Button Badge' ||
+                                  order['item'] == 'Button Pin' ||
+                                  order['item'] == 'Party Hat' ||
+                                  order['item'] == 'Jigsaw Puzzle' || 
+                                  order['item'] == 'Banner' || 
+                                  order['item'] == 'Calendar' || 
+                                  order['item'] == 'Clock' ||
+                                  order['item'] == 'Hair Brush') {
+                                setState(() {
+                                  showFloatingOrderDetails = true;
+                                  activeFloatingOrder = order;
+                                  showRemainingBalanceInput = false;
+                                });
+                              } else {
+                                setState(() {
+                                  showTrackSaved = false;
+                                  _activeItem = order['type'];
+                                });
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF00C853),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(6)),
                             ),
+                            child: const Text("VIEW",
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold)),
                           ),
-                        ),
-                      ),
-                      Expanded(child: Text(order['date']!)),
-                      Expanded(
-                        child: Text(
-                          order['details']!,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12, color: Colors.black54),
                         ),
                       ),
                     ],
@@ -777,7 +2682,6 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPage> {
   }
 }
 
-// Custom Painter for Dashed Border
 class DashedBorderPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -792,24 +2696,25 @@ class DashedBorderPainter extends CustomPainter {
     double currentX = 0;
     double currentY = 0;
 
-    // Top
     while (currentX < size.width) {
       path.moveTo(currentX, 0);
-      currentX = currentX + dashWidth < size.width ? currentX + dashWidth : size.width;
+      currentX = currentX + dashWidth < size.width
+          ? currentX + dashWidth
+          : size.width;
       path.lineTo(currentX, 0);
       currentX += dashSpace;
     }
 
-    // Right
     currentY = 0;
     while (currentY < size.height) {
       path.moveTo(size.width, currentY);
-      currentY = currentY + dashWidth < size.height ? currentY + dashWidth : size.height;
+      currentY = currentY + dashWidth < size.height
+          ? currentY + dashWidth
+          : size.height;
       path.lineTo(size.width, currentY);
       currentY += dashSpace;
     }
 
-    // Bottom
     currentX = size.width;
     while (currentX > 0) {
       path.moveTo(currentX, size.height);
@@ -818,7 +2723,6 @@ class DashedBorderPainter extends CustomPainter {
       currentX -= dashSpace;
     }
 
-    // Left
     currentY = size.height;
     while (currentY > 0) {
       path.moveTo(0, currentY);

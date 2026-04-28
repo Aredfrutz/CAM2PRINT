@@ -356,3 +356,4 @@ class _ConsumptionTrackerState extends State<ConsumptionTracker> {
     );
   }
 }
+

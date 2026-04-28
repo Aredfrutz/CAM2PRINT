@@ -354,6 +354,7 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
                     ),
                   ),
                 ),
+                const SizedBox(width: 8),
                 Expanded(
                   flex: 2,
                   child: Center(
@@ -367,6 +368,7 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
                     ),
                   ),
                 ),
+                const SizedBox(width: 8),
                 Expanded(
                   flex: 2,
                   child: Center(
@@ -381,6 +383,7 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
                   ),
                 ),
                 if (showCorrectionColumns) ...[
+                  const SizedBox(width: 8),
                   Expanded(
                     flex: 2,
                     child: Center(
@@ -394,6 +397,7 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
                       ),
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Expanded(
                     flex: 3,
                     child: Center(
@@ -441,6 +445,7 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
                             ),
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Expanded(
                           flex: 2,
                           child: Center(
@@ -449,6 +454,7 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
                                 : _buildStaticInputField(item['packs']!),
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Expanded(
                           flex: 2,
                           child: Center(
@@ -458,6 +464,7 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
                           ),
                         ),
                         if (showCorrectionColumns) ...[
+                          const SizedBox(width: 8),
                           Expanded(
                             flex: 2,
                             child: Center(
@@ -466,6 +473,7 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
                                   : _buildStaticInputField(item['correction']!),
                             ),
                           ),
+                          const SizedBox(width: 8),
                           Expanded(
                             flex: 3,
                             child: isEditable
