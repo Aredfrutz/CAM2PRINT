@@ -1,14 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/app/app_router.dart';
-import 'package:flutter_application_1/core/config/app_env.dart';
+import 'package:flutter_application_1/app/app_router.dart'; // Import ito dapat!
 
 class Cam2PrintApp extends StatelessWidget {
   const Cam2PrintApp({super.key});
-
-  static void bootstrap() {
-    final env = AppEnv.fromDartDefine();
-    runApp(Cam2PrintApp(key: ValueKey(env.name)));
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +10,10 @@ class Cam2PrintApp extends StatelessWidget {
       title: 'Cam2print System',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(useMaterial3: true),
-      initialRoute: AppRouter.login,
+      
+      // ✅ TAMA: Gamitin ang variable name na 'login' mula sa AppRouter
+      initialRoute: AppRouter.login, 
+      
       onGenerateRoute: AppRouter.onGenerateRoute,
     );
   }

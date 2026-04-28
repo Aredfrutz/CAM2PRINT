@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 
 enum AppModule {
-  daily('Daily', Icons.inventory_2_outlined),
-  overall('Overall', Icons.warehouse_outlined),
-  reports('Reports', Icons.assessment_outlined),
-  reminder('Reminder', Icons.notifications_none_outlined),
-  salary('Salary', Icons.attach_money_outlined),
-  orders('Orders', Icons.assignment_outlined),
-  scheduling('Scheduling', Icons.calendar_month_outlined);
+  overallInventory('Overall Inventory', Icons.warehouse_outlined),
+  dailyInventory('Daily Inventory', Icons.inventory_2_outlined), // Added for Staff
+  services('Services', Icons.volunteer_activism_outlined), 
+  salary('Salary', Icons.payments_outlined),
+  orders('Orders', Icons.shopping_cart_outlined),
+  consumptionTracker('Consumption Tracker', Icons.insert_chart_outlined), // Added for Staff
+  customizedOrders('Customized Orders', Icons.assignment_outlined),
+  schedule('Schedule', Icons.calendar_month_outlined),
+  reports('Reports', Icons.description_outlined); 
 
   const AppModule(this.label, this.icon);
 
