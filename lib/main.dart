@@ -304,8 +304,32 @@
 //   }
 // }
 
+// THE CODE FOR CUSTOMIZED_ORDERS_ADMIN 
+// import 'package:flutter/material.dart';
+// import 'customized_orders_admin/customized_orders_admin.dart';
+
+// void main() {
+//   runApp(const MyApp());
+// }
+
+// class MyApp extends StatelessWidget {
+//   const MyApp({super.key});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       title: 'Cam2print System',
+//       debugShowCheckedModeBanner: false,
+//       theme: ThemeData(
+//         primarySwatch: Colors.blue,
+//       ),
+//       home: const CustomizedOrdersPage(),
+//     );
+//   }
+// }
+
 import 'package:flutter/material.dart';
-import 'customized_orders_admin/customized_orders_admin.dart';
+import 'reports_admin/reports_admin.dart'; // Make sure this imports your new file
 
 void main() {
   runApp(const MyApp());
@@ -320,9 +344,10 @@ class MyApp extends StatelessWidget {
       title: 'Cam2print System',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        fontFamily: 'Inter',
       ),
-      home: const CustomizedOrdersPage(),
+      // Set the home to your new Reports page
+      home: const ReportsAdminPage(),
     );
   }
 }
