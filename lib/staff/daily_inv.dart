@@ -170,24 +170,22 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
     if (_currentTab == 'history') {
       return Row(
         children: [
-          // History Label (Green background, White text to match style of active button)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.white, // White background indicates active tab
+              color: Colors.white,
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Text(
               'History',
               style: TextStyle(
-                color: Color(0xFF55A888), // Green text
+                color: Color(0xFF55A888),
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
           const Spacer(),
-          // Filter Button (Green)
           GestureDetector(
             onTap: _showFilterDialog,
             child: Container(
@@ -213,25 +211,21 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
     // If in Inventory or Corrections mode
     return Row(
       children: [
-        // Left Side: Add/Edit or Save Button (Red)
         GestureDetector(
           onTap: () {
             if (_currentTab == 'inventory') {
-              // Toggle edit mode for inventory
               _toggleEditInventory();
             } else {
-              // In corrections mode, clicking Save resets everything
               _saveAndReset();
             }
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFFE05555), // Red color
-              borderRadius: BorderRadius.circular(25), // Fully rounded
+              color: const Color(0xFFE05555),
+              borderRadius: BorderRadius.circular(25),
             ),
             child: Text(
-              // Logic to decide button text
               (_currentTab == 'inventory' && !_isEditingInventory)
                   ? 'Add/Edit Packs or Pieces'
                   : 'Save Items',
@@ -244,8 +238,6 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
           ),
         ),
         const Spacer(),
-        
-        // Right Side: Corrections and History Buttons (Green)
         _buildRightSideButtons(),
       ],
     );
@@ -254,7 +246,6 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
   Widget _buildRightSideButtons() {
     return Row(
       children: [
-        // Corrections Button
         GestureDetector(
           onTap: () {
             setState(() {
@@ -265,16 +256,16 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
               color: _currentTab == 'corrections'
-                  ? Colors.white // Active state: White bg
-                  : const Color(0xFF55A888), // Inactive: Green bg
+                  ? Colors.white
+                  : const Color(0xFF55A888),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               'Corrections',
               style: TextStyle(
                 color: _currentTab == 'corrections'
-                    ? const Color(0xFF55A888) // Active text: Green
-                    : Colors.white, // Inactive text: White
+                    ? const Color(0xFF55A888)
+                    : Colors.white,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -282,8 +273,6 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
           ),
         ),
         const SizedBox(width: 10),
-        
-        // History Button
         GestureDetector(
           onTap: () {
             setState(() {
@@ -333,7 +322,7 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
         children: [
           // Table Header
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: const BoxDecoration(
               color: Color(0xFF4B5580),
               borderRadius: BorderRadius.only(
@@ -355,8 +344,9 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
                   ),
                 ),
                 const SizedBox(width: 8),
+                // Changed flex from 2 to 1 to make it half width
                 Expanded(
-                  flex: 2,
+                  flex: 1, 
                   child: Center(
                     child: Text(
                       'Packs',
@@ -369,8 +359,9 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
                   ),
                 ),
                 const SizedBox(width: 8),
+                // Changed flex from 2 to 1
                 Expanded(
-                  flex: 2,
+                  flex: 1, 
                   child: Center(
                     child: Text(
                       'Pieces',
@@ -384,8 +375,9 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
                 ),
                 if (showCorrectionColumns) ...[
                   const SizedBox(width: 8),
+                  // Changed flex from 2 to 1
                   Expanded(
-                    flex: 2,
+                    flex: 1, 
                     child: Center(
                       child: Text(
                         'Correction',
@@ -431,7 +423,7 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
                     ),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     child: Row(
                       children: [
                         Expanded(
@@ -446,8 +438,9 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
                           ),
                         ),
                         const SizedBox(width: 8),
+                        // Changed flex from 2 to 1
                         Expanded(
-                          flex: 2,
+                          flex: 1, 
                           child: Center(
                             child: isEditable
                                 ? _buildInputFieldWithSpinners(item, 'packs')
@@ -455,8 +448,9 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
                           ),
                         ),
                         const SizedBox(width: 8),
+                        // Changed flex from 2 to 1
                         Expanded(
-                          flex: 2,
+                          flex: 1, 
                           child: Center(
                             child: isEditable
                                 ? _buildInputFieldWithSpinners(item, 'pieces')
@@ -465,8 +459,9 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
                         ),
                         if (showCorrectionColumns) ...[
                           const SizedBox(width: 8),
+                          // Changed flex from 2 to 1
                           Expanded(
-                            flex: 2,
+                            flex: 1, 
                             child: Center(
                               child: isEditable
                                   ? _buildInputFieldWithSpinners(item, 'correction')
@@ -500,7 +495,7 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
   // Simple gray box without spinners (Used when just viewing in Inventory mode)
   Widget _buildStaticInputField(String value) {
     return Container(
-      height: 36,
+      height: 28,
       decoration: BoxDecoration(
         color: const Color(0xFF7C85A0),
         borderRadius: BorderRadius.circular(6),
@@ -521,7 +516,7 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
   // Input box with up/down arrows (Used in Edit/Correction/History mode)
   Widget _buildInputFieldWithSpinners(Map<String, String> item, String key) {
     return Container(
-      height: 36,
+      height: 28,
       decoration: BoxDecoration(
         color: const Color(0xFF7C85A0),
         borderRadius: BorderRadius.circular(6),
@@ -542,7 +537,7 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
           ),
           Container(
             width: 24,
-            height: 36,
+            height: 28,
             decoration: const BoxDecoration(
               color: Color(0xFF6A7590),
               borderRadius: BorderRadius.only(
@@ -560,7 +555,7 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
                     });
                   },
                   child: Container(
-                    height: 18,
+                    height: 14,
                     decoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(color: const Color(0xFF5A6580), width: 0.5),
@@ -580,8 +575,8 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
                       if (val > 0) item[key] = (val - 1).toString();
                     });
                   },
-                  child: Container(
-                    height: 18,
+                  child: SizedBox(
+                    height: 14,
                     child: const Icon(
                       Icons.keyboard_arrow_down,
                       size: 14,
@@ -599,17 +594,17 @@ class _DailyInventoryPageState extends State<DailyInventoryPage> {
 
   Widget _buildReasonInputField(Map<String, String> item) {
     return Container(
-      height: 36,
+      height: 28,
       decoration: BoxDecoration(
         color: const Color(0xFF7C85A0),
         borderRadius: BorderRadius.circular(6),
       ),
       child: TextField(
-        textAlign: TextAlign.center, // Text is centered
+        textAlign: TextAlign.center,
         style: const TextStyle(color: Colors.white, fontSize: 13),
         decoration: InputDecoration(
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
           hintText: 'Enter reason...',
           hintStyle: const TextStyle(color: Colors.white54),
         ),
