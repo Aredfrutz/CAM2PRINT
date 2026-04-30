@@ -64,8 +64,7 @@ class _ReportsAdminPageState extends State<ReportsAdminPage> {
                                     const SizedBox(width: 16),
                                     _buildTabItem("Customized Orders"),
                                     const SizedBox(width: 16),
-                                    _buildTabItem("Branch Performance"),
-                                    const SizedBox(width: 16),
+                                    // Branch Performance removed
                                     _buildTabItem("Activity Log"),
                                   ],
                                 ),
@@ -95,7 +94,7 @@ class _ReportsAdminPageState extends State<ReportsAdminPage> {
                           ),
                           const SizedBox(height: 16),
                           
-                          // Table
+                          // Dynamic Table based on selected tab
                           Expanded(
                             child: _buildTable(),
                           ),
@@ -274,10 +273,97 @@ class _ReportsAdminPageState extends State<ReportsAdminPage> {
     );
   }
 
+  // --- DYNAMIC TABLE SWITCHER ---
   Widget _buildTable() {
+    switch (_selectedTab) {
+      case "Inventory":
+        return _buildInventoryTable();
+      case "Salary":
+        return _buildSalaryTable();
+      case "Customized Orders":
+        return _buildCustomizedOrdersTable();
+      case "Activity Log":
+        return _buildActivityLogTable();
+      default:
+        // Default to Attendance for "Attendance"
+        return _buildAttendanceTable();
+    }
+  }
+
+  // 1. Attendance Table (Default)
+  Widget _buildAttendanceTable() {
     const headerStyle = TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12);
     const bodyStyle = TextStyle(color: Color(0xFF334155), fontSize: 12);
+    return _buildGenericTable(
+      headers: ["Date", "Branch", "Shift", "Staff Name", "Time In", "Time Out", "Status", "Lateness (mins)", "Deduction (₱)"],
+      // Updated flexes: Increased last two columns from 2 to 3 to fix spacing
+      flexes: [2, 2, 2, 3, 2, 2, 2, 3, 3],
+      headerStyle: headerStyle,
+      bodyStyle: bodyStyle,
+    );
+  }
 
+  // 2. Inventory Table
+  Widget _buildInventoryTable() {
+    const headerStyle = TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12);
+    const bodyStyle = TextStyle(color: Color(0xFF334155), fontSize: 12);
+    return _buildGenericTable(
+      headers: ["Date", "Branch", "Item Category", "Item Name", "Start Quantity", "End Quantity", "Discrepancy", "Threshold Level", "Status", "Last Restocked Date"],
+      // Updated flexes for balanced spacing:
+      // Reduced 'Date' and 'Branch' to 2 so they don't take too much space.
+      // Increased 'Last Restocked Date' to 4 so it fits.
+      flexes: [2, 2, 3, 3, 3, 3, 3, 3, 2, 4], 
+      headerStyle: headerStyle,
+      bodyStyle: bodyStyle,
+    );
+  }
+
+  // 3. Salary Table
+  Widget _buildSalaryTable() {
+    const headerStyle = TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12);
+    const bodyStyle = TextStyle(color: Color(0xFF334155), fontSize: 12);
+    return _buildGenericTable(
+      headers: ["Pay Period", "Branch", "Staff Name", "Total Sales", "Total Commission", "Custom Orders Quantity", "Deductions", "Cash Advance", "Percentage"],
+      // Updated flexes: 
+      // Reduced Staff Name from 3 to 2 (removes big gap)
+      // Increased Custom Orders Quantity from 3 to 4 (gives more room before Deductions)
+      flexes: [2, 2, 2, 2, 3, 4, 2, 2, 2], 
+      headerStyle: headerStyle,
+      bodyStyle: bodyStyle,
+    );
+  }
+  // 4. Customized Orders Table
+     Widget _buildCustomizedOrdersTable() {
+    const headerStyle = TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12);
+    const bodyStyle = TextStyle(color: Color(0xFF334155), fontSize: 12);
+    return _buildGenericTable(
+      headers: ["Date Received", "Customer Name", "Branch", "Service Type", "Status", "Down Payment", "Balance", "Payment Status", "Item Quantity", "Posted by"],
+      // Updated flexes to ensure appropriate spacing and prevent wrapping:
+      // Increased 'Balance', 'Status', and 'Branch' so they aren't squashed.
+      flexes: [3, 4, 2, 3, 2, 3, 2, 4, 3, 3], 
+      headerStyle: headerStyle,
+      bodyStyle: bodyStyle,
+    );
+  }
+  // 5. Activity Log Table
+  Widget _buildActivityLogTable() {
+    const headerStyle = TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12);
+    const bodyStyle = TextStyle(color: Color(0xFF334155), fontSize: 12);
+    return _buildGenericTable(
+      headers: ["Date", "Staff Name", "Action Type", "Details/Change"],
+      flexes: [2, 3, 3, 6],
+      headerStyle: headerStyle,
+      bodyStyle: bodyStyle,
+    );
+  }
+
+  // Generic Table Builder to avoid code repetition
+  Widget _buildGenericTable({
+    required List<String> headers,
+    required List<int> flexes,
+    required TextStyle headerStyle,
+    required TextStyle bodyStyle,
+  }) {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: const Color(0xFFB0C4DE)),
@@ -296,17 +382,15 @@ class _ReportsAdminPageState extends State<ReportsAdminPage> {
               ),
             ),
             child: Row(
-              children: [
-                Expanded(flex: 2, child: Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Text("Date", style: headerStyle))),
-                Expanded(flex: 2, child: Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Text("Branch", style: headerStyle))),
-                Expanded(flex: 2, child: Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Text("Shift", style: headerStyle))),
-                Expanded(flex: 3, child: Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Text("Staff Name", style: headerStyle))),
-                Expanded(flex: 2, child: Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Text("Time In", style: headerStyle))),
-                Expanded(flex: 2, child: Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Text("Time Out", style: headerStyle))),
-                Expanded(flex: 2, child: Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Text("Status", style: headerStyle))),
-                Expanded(flex: 2, child: Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Text("Lateness (mins)", style: headerStyle))),
-                Expanded(flex: 2, child: Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Text("Deduction (₱)", style: headerStyle))),
-              ],
+              children: List.generate(headers.length, (index) {
+                return Expanded(
+                  flex: flexes[index],
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: Text(headers[index], style: headerStyle),
+                  ),
+                );
+              }),
             ),
           ),
           // Empty Rows
@@ -323,17 +407,15 @@ class _ReportsAdminPageState extends State<ReportsAdminPage> {
                     color: index.isEven ? Colors.white : const Color(0xFFE8F0FE),
                   ),
                   child: Row(
-                    children: const [
-                      Expanded(flex: 2, child: Padding(padding: EdgeInsets.symmetric(horizontal: 6), child: Text("", style: bodyStyle))),
-                      Expanded(flex: 2, child: Padding(padding: EdgeInsets.symmetric(horizontal: 6), child: Text("", style: bodyStyle))),
-                      Expanded(flex: 2, child: Padding(padding: EdgeInsets.symmetric(horizontal: 6), child: Text("", style: bodyStyle))),
-                      Expanded(flex: 3, child: Padding(padding: EdgeInsets.symmetric(horizontal: 6), child: Text("", style: bodyStyle))),
-                      Expanded(flex: 2, child: Padding(padding: EdgeInsets.symmetric(horizontal: 6), child: Text("", style: bodyStyle))),
-                      Expanded(flex: 2, child: Padding(padding: EdgeInsets.symmetric(horizontal: 6), child: Text("", style: bodyStyle))),
-                      Expanded(flex: 2, child: Padding(padding: EdgeInsets.symmetric(horizontal: 6), child: Text("", style: bodyStyle))),
-                      Expanded(flex: 2, child: Padding(padding: EdgeInsets.symmetric(horizontal: 6), child: Text("", style: bodyStyle))),
-                      Expanded(flex: 2, child: Padding(padding: EdgeInsets.symmetric(horizontal: 6), child: Text("", style: bodyStyle))),
-                    ],
+                    children: List.generate(headers.length, (i) {
+                      return Expanded(
+                        flex: flexes[i],
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: Text("", style: bodyStyle),
+                        ),
+                      );
+                    }),
                   ),
                 );
               },
@@ -343,6 +425,7 @@ class _ReportsAdminPageState extends State<ReportsAdminPage> {
       ),
     );
   }
+
   // The Filter Dialog that appears when you click Filter
   void _showFilterDialog() {
     showDialog(
