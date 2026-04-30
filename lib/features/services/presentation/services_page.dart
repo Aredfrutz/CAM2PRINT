@@ -1,5 +1,22 @@
 import 'package:flutter/material.dart';
 
+// DATA MODEL
+class ServiceItem {
+  final int id;
+  final String name;
+  final String price;
+  final String category;
+  final String section;
+
+  ServiceItem({
+    required this.id, 
+    required this.name, 
+    required this.price, 
+    required this.category,
+    required this.section,
+  });
+}
+
 class StaffServicesPage extends StatefulWidget {
   const StaffServicesPage({super.key});
 
@@ -10,37 +27,47 @@ class StaffServicesPage extends StatefulWidget {
 class _StaffServicesPageState extends State<StaffServicesPage> {
   String _selectedCategory = 'Packages';
 
-  // 1. The main visible tabs
   final List<String> _mainCategories = [
-    'Packages', 'Souvenir', 'Invitation', 'Candle', 'Ref Magnet', 'T-Shirt', 'Chip Bag'
+    'Packages', 'Souvenir', 'Invitation', 'Candle', 'Ref Magnet', 
+    'T-Shirt', 'Chip Bag', 'Button Badge'
   ];
 
-  // 2. The extra categories hidden inside the "More" dropdown
   final List<String> _moreCategories = [
-    'Button Badge', 'Button Pin', 'Party Hat', 'Jigsaw Puzzle', 
-    'Banner', 'Calendar', 'Hair Brush', 'Clock'
+    'Button Pin', 'Party Hat','Jigsaw Puzzle', 
+    'Banner','Calendar', 'Hair Brush', 'Clock'
   ];
+
+  final Map<String, List<String>> _categorySections = {};
+
+  // DUMMY DATABASE
+  final List<ServiceItem> _items = [
+    ServiceItem(id: 1, name: "Basic Package", price: "1,000", category: "Packages", section: "Packages"),
+    ServiceItem(id: 2, name: "Premium Package", price: "2,500", category: "Packages", section: "Premium Packages"),
+    ServiceItem(id: 3, name: "Wedding Souvenir", price: "50", category: "Souvenir", section: "Souvenir"),
+    ServiceItem(id: 4, name: "Birthday Invite", price: "30", category: "Invitation", section: "Invitation"),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    for (var cat in [..._mainCategories, ..._moreCategories]) {
+      _categorySections[cat] = [cat]; 
+    }
+    _categorySections['Packages']!.add('Premium Packages'); 
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent, 
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+        padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20), 
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildCategoryTabs(),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.only(bottom: 20),
-                children: [
-                  // DYNAMIC: Passes the currently selected category to change the UI
-                  _buildSectionBlock(_selectedCategory),
-                  const SizedBox(height: 20),
-                  _buildSectionBlock(_selectedCategory), 
-                ],
-              ),
+              child: _buildMainContentPanel(),
             ),
           ],
         ),
@@ -48,7 +75,6 @@ class _StaffServicesPageState extends State<StaffServicesPage> {
     );
   }
 
-  // --- TOP CATEGORY TABS ---
   Widget _buildCategoryTabs() {
     return Container(
       height: 48,
@@ -58,21 +84,24 @@ class _StaffServicesPageState extends State<StaffServicesPage> {
         color: Colors.white.withOpacity(0.85),
         borderRadius: BorderRadius.circular(30),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            // Build the standard tabs
-            ..._mainCategories.map((cat) => _buildTabItem(
-              title: cat,
-              isSelected: _selectedCategory == cat,
-              onTap: () => setState(() => _selectedCategory = cat),
-            )),
-            
-            // Build the dynamic "More" Dropdown tab
-            _buildMoreTab(),
-          ],
-        ),
+      child: Row(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _mainCategories.length,
+              itemBuilder: (context, index) {
+                final cat = _mainCategories[index];
+                return _buildTabItem(
+                  title: cat,
+                  isSelected: _selectedCategory == cat,
+                  onTap: () => setState(() => _selectedCategory = cat),
+                );
+              },
+            ),
+          ),
+          if (_moreCategories.isNotEmpty) _buildMoreTab(),
+        ],
       ),
     );
   }
@@ -82,7 +111,7 @@ class _StaffServicesPageState extends State<StaffServicesPage> {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        margin: const EdgeInsets.symmetric(horizontal: 2), 
+        margin: const EdgeInsets.symmetric(horizontal: 12), 
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFF9BA7C0) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
@@ -100,9 +129,7 @@ class _StaffServicesPageState extends State<StaffServicesPage> {
     );
   }
 
-  // --- THE "MORE" DROPDOWN MENU ---
   Widget _buildMoreTab() {
-    // Check if the currently selected category belongs to the "More" list
     bool isMoreSelected = _moreCategories.contains(_selectedCategory);
 
     return Theme(
@@ -125,7 +152,6 @@ class _StaffServicesPageState extends State<StaffServicesPage> {
               child: Text(
                 choice,
                 style: TextStyle(
-                  // Highlight the text blue if it's currently selected in the menu
                   fontWeight: _selectedCategory == choice ? FontWeight.bold : FontWeight.normal,
                   color: _selectedCategory == choice ? Colors.blue : Colors.black,
                 ),
@@ -135,7 +161,7 @@ class _StaffServicesPageState extends State<StaffServicesPage> {
         },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          margin: const EdgeInsets.symmetric(horizontal: 2),
+          margin: const EdgeInsets.only(left: 12, right: 8), 
           decoration: BoxDecoration(
             color: isMoreSelected ? const Color(0xFF9BA7C0) : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
@@ -145,7 +171,6 @@ class _StaffServicesPageState extends State<StaffServicesPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                // If a "More" item is selected, show its name on the button, otherwise just show "More"
                 isMoreSelected ? _selectedCategory : 'More', 
                 style: TextStyle(
                   color: isMoreSelected ? Colors.black : Colors.black87,
@@ -166,85 +191,113 @@ class _StaffServicesPageState extends State<StaffServicesPage> {
     );
   }
 
-  // --- SECTION BLOCK (Header + Grid) ---
-  Widget _buildSectionBlock(String title) {
+  // ✅ PERFECT ADMIN MATCH: The solid F1F4F9 container that wraps everything
+  Widget _buildMainContentPanel() {
+    final sections = _categorySections[_selectedCategory] ?? [];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F4F9), 
+        borderRadius: BorderRadius.circular(5)
+      ),
+      child: ListView.separated(
+        itemCount: sections.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 10), // Matches Admin block spacing
+        itemBuilder: (context, index) {
+          return _buildSectionBlock(sections[index]);
+        },
+      ),
+    );
+  }
+
+  // --- INDIVIDUAL SECTION CONTAINER ---
+  Widget _buildSectionBlock(String sectionName) {
+    final currentItems = _items.where((item) => item.category == _selectedCategory && item.section == sectionName).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 1. Header with the bright blue top border
+        // ✅ PERFECT ADMIN MATCH: Header sizing and colors
         Container(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
           decoration: const BoxDecoration(
-            color: Color(0xFF4C5A79),
+            color: Color(0xFF4A5777),
+            borderRadius: BorderRadius.only(topLeft: Radius.circular(5), topRight: Radius.circular(5)),
             border: Border(
               top: BorderSide(color: Colors.blueAccent, width: 3),
             ),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
           child: Text(
-            title, // ✅ DYNAMIC TITLE
+            sectionName, 
             style: const TextStyle(
               color: Colors.white,
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
             ),
           ),
         ),
         
-        // 2. Main Content Body for this block
-        Container(
-          color: Colors.white.withOpacity(0.6), 
-          padding: const EdgeInsets.all(15),
-          child: GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 8, 
-              crossAxisSpacing: 15,
-              mainAxisSpacing: 15,
-              childAspectRatio: 0.65, 
+        // ✅ PERFECT ADMIN MATCH: No white background, just the grid padding!
+        currentItems.isEmpty 
+          ? const Padding(
+              padding: EdgeInsets.all(20.0),
+              child: Center(child: Text("No items available in this section.", style: TextStyle(color: Colors.black54))),
+            )
+          : GridView.builder(
+              padding: const EdgeInsets.all(20), // Matches Admin padding
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 8, 
+                crossAxisSpacing: 12,    // Matches Admin
+                mainAxisSpacing: 20,     // Matches Admin
+                childAspectRatio: 0.62,  // Matches Admin
+              ),
+              itemCount: currentItems.length, 
+              itemBuilder: (context, index) => _buildViewOnlyItemCard(currentItems[index]), 
             ),
-            itemCount: 8, 
-            itemBuilder: (context, index) => _buildViewOnlyItemCard(title, index),
-          ),
-        ),
       ],
     );
   }
 
-  // --- FLAT VIEW-ONLY ITEM CARD ---
-  Widget _buildViewOnlyItemCard(String categoryName, int index) {
+  // ✅ PERFECT ADMIN MATCH: Plain items without the white card borders
+  Widget _buildViewOnlyItemCard(ServiceItem item) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFF67728E),
+            decoration: BoxDecoration(
+              color: const Color(0xFF6A7B9C), // Admin grey-blue
+              borderRadius: BorderRadius.circular(4), // Admin radius
             ),
           ),
         ),
         const SizedBox(height: 6),
-        
-        // ✅ DYNAMIC ITEM NAME
         Text(
-          "$categoryName ${index + 1}", 
+          item.name, 
           style: const TextStyle(
             color: Colors.black,
             fontSize: 10,
-            fontStyle: FontStyle.italic, 
+            fontStyle: FontStyle.normal, 
+            fontWeight: FontWeight.bold,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 2),
-        
-        const Text(
-          "₱1,000",
-          style: TextStyle(
-            color: Colors.red,
-            fontWeight: FontWeight.w600,
-            fontSize: 11,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "₱${item.price}",
+              style: const TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+                fontSize: 11,
+              ),
+            ),
+            // Staff does not have the delete icon
+          ],
         ),
       ],
     );

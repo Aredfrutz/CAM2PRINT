@@ -6,12 +6,14 @@ class ServiceItem {
   final String name;
   final String price;
   final String category;
+  final String section;
 
   ServiceItem({
     required this.id, 
     required this.name, 
     required this.price, 
-    required this.category
+    required this.category,
+    required this.section,
   });
 }
 
@@ -29,30 +31,48 @@ class _AdminServicesPageState extends State<AdminServicesPage> {
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _sectionController = TextEditingController();
 
-  List<String> _mainCategories = [
-    'Packages', 'Souvenir', 'Invitation', 'Candle', 'Ref Magnet', 'T-shirt', 'Chip Bag'
+  final List<String> _mainCategories = [
+    'Packages', 'Souvenir', 'Invitation', 'Candle', 'Ref Magnet', 
+    'T-shirt', 'Chip Bag', 'Button Badge'
   ];
 
-  List<String> _moreCategories = [
-    'Button Badge', 'Button Pin', 'Party Hat', 'Jigsaw Puzzle', 
+  final List<String> _moreCategories = [
+    'Button Pin','Party Hat','Jigsaw Puzzle',
     'Banner', 'Calendar', 'Hair Brush', 'Clock'
   ];
 
-  List<ServiceItem> _items = [
-    ServiceItem(id: 1, name: "Souvenir name", price: "1,000", category: "Packages"),
+  final Map<String, List<String>> _categorySections = {};
+
+  final List<ServiceItem> _items = [
+    ServiceItem(id: 1, name: "Basic Package", price: "1,000", category: "Packages", section: "Packages"),
+    ServiceItem(id: 2, name: "Premium Package", price: "2,500", category: "Packages", section: "Premium Packages"),
+    ServiceItem(id: 3, name: "Wedding Souvenir", price: "50", category: "Souvenir", section: "Souvenir"),
+    ServiceItem(id: 4, name: "Birthday Invite", price: "30", category: "Invitation", section: "Invitation"),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    for (var cat in [..._mainCategories, ..._moreCategories]) {
+      _categorySections[cat] = [cat]; 
+    }
+    _categorySections['Packages']!.add('Premium Packages'); 
+  }
+
+  String? _targetSectionForNewPackage; 
+
   // ==========================================
-  // ITEM LOGIC (ADD / DELETE)
+  // ITEM LOGIC
   // ==========================================
   void _addNewPackage() {
-    if (_nameController.text.isNotEmpty && _priceController.text.isNotEmpty) {
+    if (_nameController.text.isNotEmpty && _priceController.text.isNotEmpty && _targetSectionForNewPackage != null) {
       setState(() {
         _items.add(ServiceItem(
           id: DateTime.now().millisecondsSinceEpoch,
           name: _nameController.text,
           price: _priceController.text,
           category: _selectedCategory, 
+          section: _targetSectionForNewPackage!, 
         ));
       });
       _nameController.clear();
@@ -68,53 +88,29 @@ class _AdminServicesPageState extends State<AdminServicesPage> {
   }
 
   // ==========================================
-  // SECTION LOGIC (ADD / DELETE)
+  // SECTION LOGIC
   // ==========================================
-  
-  // ✅ FUNCTION TO ADD NEW SECTION (Inside "More")
   void _addNewSection() {
     if (_sectionController.text.isNotEmpty) {
       setState(() {
-        String newSection = _sectionController.text.trim();
-        
-        // ✅ Added to the dropdown list!
-        _moreCategories.add(newSection); 
-        
-        _selectedCategory = newSection; 
+        _categorySections[_selectedCategory]!.add(_sectionController.text.trim());
       });
       _sectionController.clear();
-      Navigator.pop(context); // Close dialog
+      Navigator.pop(context); 
     }
   }
 
-  // ✅ FUNCTION TO DELETE CURRENT SECTION
-  void _deleteCurrentSection() {
-    if (_mainCategories.length + _moreCategories.length <= 1) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Cannot delete the last remaining section."))
-      );
-      return;
-    }
-
+  void _deleteSection(String sectionName) {
     setState(() {
-      _items.removeWhere((item) => item.category == _selectedCategory);
-      _mainCategories.remove(_selectedCategory);
-      _moreCategories.remove(_selectedCategory);
-
-      if (_mainCategories.isNotEmpty) {
-        _selectedCategory = _mainCategories.first;
-      } else if (_moreCategories.isNotEmpty) {
-        _selectedCategory = _moreCategories.first;
-      }
+      _categorySections[_selectedCategory]!.remove(sectionName);
+      _items.removeWhere((item) => item.category == _selectedCategory && item.section == sectionName);
     });
-    
     Navigator.pop(context); 
   }
 
   // ==========================================
   // DIALOGS
   // ==========================================
-
   void _showAddSectionDialog() {
     showDialog(
       context: context,
@@ -125,7 +121,7 @@ class _AdminServicesPageState extends State<AdminServicesPage> {
         content: TextField(
           controller: _sectionController,
           decoration: const InputDecoration(
-            hintText: "Enter Section Name (e.g. Mugs)",
+            hintText: "Enter Section Name (e.g. VIP Packages)",
             filled: true,
             fillColor: Colors.white,
             border: OutlineInputBorder(borderSide: BorderSide.none),
@@ -146,20 +142,20 @@ class _AdminServicesPageState extends State<AdminServicesPage> {
     );
   }
 
-  void _showDeleteSectionConfirmDialog() {
+  void _showDeleteSectionConfirmDialog(String sectionName) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         title: const Text("Delete Section?"),
-        content: Text("Are you sure you want to delete '$_selectedCategory'?\n\nAll items inside this section will also be deleted."),
+        content: Text("Are you sure you want to delete '$sectionName'?\n\nAll items inside this section will also be deleted."),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text("Cancel", style: TextStyle(color: Colors.black54)),
           ),
           ElevatedButton(
-            onPressed: _deleteCurrentSection,
+            onPressed: () => _deleteSection(sectionName),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text("Delete", style: TextStyle(color: Colors.white)),
           ),
@@ -168,7 +164,8 @@ class _AdminServicesPageState extends State<AdminServicesPage> {
     );
   }
 
-  void _showAddPackageDialog() {
+  void _showAddPackageDialog(String sectionName) {
+    _targetSectionForNewPackage = sectionName; 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -243,14 +240,23 @@ class _AdminServicesPageState extends State<AdminServicesPage> {
     return Scaffold(
       backgroundColor: Colors.transparent, 
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        // ✅ Removed bottom padding here so the list connects cleanly to the button
+        padding: const EdgeInsets.only(left: 20, right: 20), 
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildCategoryTabs(),
-            Expanded(child: _buildMainContentPanel()),
-            const SizedBox(height: 15),
-            _buildBottomActionBtn(),
+            Expanded(
+              child: _buildMainContentPanel(),
+            ),
           ],
+        ),
+      ),
+      // ✅ MOVED THE BUTTON HERE: This guarantees it stays fixed/sticky at the bottom!
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20, top: 15),
+          child: _buildBottomActionBtn(),
         ),
       ),
     );
@@ -259,21 +265,30 @@ class _AdminServicesPageState extends State<AdminServicesPage> {
   Widget _buildCategoryTabs() {
     return Container(
       height: 48,
-      margin: const EdgeInsets.symmetric(vertical: 10),
+      margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30)),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            ..._mainCategories.map((cat) => _buildTabItem(
-              title: cat,
-              isSelected: _selectedCategory == cat,
-              onTap: () => setState(() => _selectedCategory = cat),
-            )),
-            if (_moreCategories.isNotEmpty) _buildMoreTab(),
-          ],
-        ),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.85),
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _mainCategories.length,
+              itemBuilder: (context, index) {
+                final cat = _mainCategories[index];
+                return _buildTabItem(
+                  title: cat,
+                  isSelected: _selectedCategory == cat,
+                  onTap: () => setState(() => _selectedCategory = cat),
+                );
+              },
+            ),
+          ),
+          if (_moreCategories.isNotEmpty) _buildMoreTab(),
+        ],
       ),
     );
   }
@@ -283,7 +298,7 @@ class _AdminServicesPageState extends State<AdminServicesPage> {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        margin: const EdgeInsets.symmetric(horizontal: 2), 
+        margin: const EdgeInsets.symmetric(horizontal: 12), 
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFF9BA7C0) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
@@ -304,103 +319,150 @@ class _AdminServicesPageState extends State<AdminServicesPage> {
   Widget _buildMoreTab() {
     bool isMoreSelected = _moreCategories.contains(_selectedCategory);
 
-    return PopupMenuButton<String>(
-      offset: const Offset(0, 40),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      onSelected: (String value) => setState(() => _selectedCategory = value),
-      itemBuilder: (BuildContext context) {
-        return _moreCategories.map((String choice) {
-          return PopupMenuItem<String>(
-            value: choice,
-            child: Text(
-              choice,
-              style: TextStyle(
-                fontWeight: _selectedCategory == choice ? FontWeight.bold : FontWeight.normal,
-                color: _selectedCategory == choice ? Colors.blue : Colors.black,
+    return Theme(
+      data: Theme.of(context).copyWith(
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+      ),
+      child: PopupMenuButton<String>(
+        offset: const Offset(0, 40),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        onSelected: (String value) {
+          setState(() {
+            _selectedCategory = value;
+          });
+        },
+        itemBuilder: (BuildContext context) {
+          return _moreCategories.map((String choice) {
+            return PopupMenuItem<String>(
+              value: choice,
+              child: Text(
+                choice,
+                style: TextStyle(
+                  fontWeight: _selectedCategory == choice ? FontWeight.bold : FontWeight.normal,
+                  color: _selectedCategory == choice ? Colors.blue : Colors.black,
+                ),
               ),
-            ),
-          );
-        }).toList();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        margin: const EdgeInsets.symmetric(horizontal: 2),
-        decoration: BoxDecoration(
-          color: isMoreSelected ? const Color(0xFF9BA7C0) : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        alignment: Alignment.center,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              isMoreSelected ? _selectedCategory : 'More', 
-              style: TextStyle(
-                color: isMoreSelected ? Colors.black : Colors.black87,
-                fontWeight: isMoreSelected ? FontWeight.w600 : FontWeight.normal,
-                fontSize: 13,
+            );
+          }).toList();
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          margin: const EdgeInsets.only(left: 12, right: 8), 
+          decoration: BoxDecoration(
+            color: isMoreSelected ? const Color(0xFF9BA7C0) : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                isMoreSelected ? _selectedCategory : 'More', 
+                style: TextStyle(
+                  color: isMoreSelected ? Colors.black : Colors.black87,
+                  fontWeight: isMoreSelected ? FontWeight.w600 : FontWeight.normal,
+                  fontSize: 13,
+                ),
               ),
-            ),
-            const SizedBox(width: 4),
-            Icon(Icons.keyboard_arrow_down, size: 16, color: isMoreSelected ? Colors.black : Colors.black54),
-          ],
+              const SizedBox(width: 4),
+              Icon(
+                Icons.keyboard_arrow_down, 
+                size: 16, 
+                color: isMoreSelected ? Colors.black : Colors.black54
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildMainContentPanel() {
-    final currentItems = _items.where((item) => item.category == _selectedCategory).toList();
+    final sections = _categorySections[_selectedCategory] ?? [];
 
     return Container(
-      decoration: BoxDecoration(color: const Color(0xFFF1F4F9), borderRadius: BorderRadius.circular(5)),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
-            decoration: const BoxDecoration(color: Color(0xFF4A5777), borderRadius: BorderRadius.only(topLeft: Radius.circular(5), topRight: Radius.circular(5))),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(_selectedCategory, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                GestureDetector(
-                  onTap: _showDeleteSectionConfirmDialog,
-                  child: const Icon(Icons.close, color: Colors.white, size: 20),
-                ),
-              ],
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F4F9), 
+        borderRadius: BorderRadius.circular(5)
+      ),
+      child: ListView.separated(
+        padding: const EdgeInsets.only(bottom: 20),
+        itemCount: sections.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 10), 
+        itemBuilder: (context, index) {
+          return _buildSectionBlock(sections[index]);
+        },
+      ),
+    );
+  }
+
+  Widget _buildSectionBlock(String sectionName) {
+    final currentItems = _items.where((item) => item.category == _selectedCategory && item.section == sectionName).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+          decoration: const BoxDecoration(
+            color: Color(0xFF4A5777),
+            borderRadius: BorderRadius.only(topLeft: Radius.circular(5), topRight: Radius.circular(5)),
+            border: Border(
+              top: BorderSide(color: Colors.blueAccent, width: 3),
             ),
           ),
-          Expanded(
-            child: Stack(
-              children: [
-                GridView.builder(
-                  padding: const EdgeInsets.all(20),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 8, 
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 20,
-                    childAspectRatio: 0.62, 
-                  ),
-                  itemCount: currentItems.length, 
-                  itemBuilder: (context, index) => _buildMiniServiceCard(currentItems[index]), 
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                sectionName, 
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: GestureDetector(
-                    onTap: _showAddPackageDialog, 
+              ),
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => _showAddPackageDialog(sectionName), 
                     child: Container(
                       padding: const EdgeInsets.all(2),
                       decoration: BoxDecoration(color: Colors.green[400], borderRadius: BorderRadius.circular(2)),
                       child: const Icon(Icons.add, color: Colors.white, size: 16),
                     ),
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 15),
+                  GestureDetector(
+                    onTap: () => _showDeleteSectionConfirmDialog(sectionName), 
+                    child: const Icon(Icons.close, color: Colors.white, size: 20),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        
+        currentItems.isEmpty 
+          ? const Padding(
+              padding: EdgeInsets.all(20.0),
+              child: Center(child: Text("No items yet. Click '+' to add.", style: TextStyle(color: Colors.black54))),
+            )
+          : GridView.builder(
+              padding: const EdgeInsets.all(20), 
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 8, 
+                crossAxisSpacing: 12,    
+                mainAxisSpacing: 20,     
+                childAspectRatio: 0.62,  
+              ),
+              itemCount: currentItems.length, 
+              itemBuilder: (context, index) => _buildMiniServiceCard(currentItems[index]), 
+            ),
+      ],
     );
   }
 
@@ -411,22 +473,34 @@ class _AdminServicesPageState extends State<AdminServicesPage> {
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF6A7B9C),
-              borderRadius: BorderRadius.circular(4),
+              color: const Color(0xFF6A7B9C), 
+              borderRadius: BorderRadius.circular(4), 
             ),
           ),
         ),
         const SizedBox(height: 6),
         Text(
           item.name, 
-          style: const TextStyle(fontSize: 10, fontStyle: FontStyle.italic, color: Colors.black), 
-          maxLines: 1, 
-          overflow: TextOverflow.ellipsis
+          style: const TextStyle(
+            color: Colors.black,
+            fontSize: 10,
+            fontStyle: FontStyle.normal,
+            fontWeight: FontWeight.bold,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text("₱${item.price}", style: const TextStyle(fontSize: 11, color: Colors.red, fontWeight: FontWeight.bold)),
+            Text(
+              "₱${item.price}",
+              style: const TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+                fontSize: 11,
+              ),
+            ),
             GestureDetector(
               onTap: () => _deleteItem(item.id), 
               child: const Icon(Icons.delete, size: 12, color: Colors.black54),
