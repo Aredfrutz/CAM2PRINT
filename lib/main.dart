@@ -328,8 +328,33 @@
 //   }
 // }
 
+// THE CODE FOR REPORTS_ADMIN
+// import 'package:flutter/material.dart';
+// import 'reports_admin/reports_admin.dart'; // Make sure this imports your new file
+
+// void main() {
+//   runApp(const MyApp());
+// }
+
+// class MyApp extends StatelessWidget {
+//   const MyApp({super.key});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       title: 'Cam2print System',
+//       debugShowCheckedModeBanner: false,
+//       theme: ThemeData(
+//         fontFamily: 'Inter',
+//       ),
+//       // Set the home to your new Reports page
+//       home: const ReportsAdminPage(),
+//     );
+//   }
+// }
+
 import 'package:flutter/material.dart';
-import 'reports_admin/reports_admin.dart'; // Make sure this imports your new file
+import 'staff_management/staff_management_admin.dart'; 
 
 void main() {
   runApp(const MyApp());
@@ -346,8 +371,8 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         fontFamily: 'Inter',
       ),
-      // Set the home to your new Reports page
-      home: const ReportsAdminPage(),
+      // This line sets the Staff Management page as the starting screen
+      home: const StaffManagementPage(),
     );
   }
 }
