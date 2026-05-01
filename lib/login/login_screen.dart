@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/app/app_router.dart';
 
 
 // ✅ This is just the LoginScreen widget - no main() or MyApp needed!
@@ -251,8 +252,11 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _handleLogin() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Logging in as ${_emailController.text}'), backgroundColor: Colors.green),
-    );
+    if (_formKey.currentState!.validate()) {
+      final email = _emailController.text.trim().toLowerCase();
+      // Staff redirects to staff profile, Admin redirects to Staff Management
+      final route = email.contains('admin') ? AppRouter.adminStaffManagement : AppRouter.staffProfile;
+      Navigator.pushReplacementNamed(context, route);
+    }
   }
 }
