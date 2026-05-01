@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/app/app_router.dart';
 
 class AdminSchedule extends StatefulWidget {
   const AdminSchedule({super.key});
@@ -46,38 +45,14 @@ class _AdminScheduleState extends State<AdminSchedule> {
   }
 
   String _formatDate(DateTime date) {
-    const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                    'July', 'August', 'September', 'October', 'November', 'December'];
     return '${months[date.month - 1]} ${date.day}';
   }
 
   String _formatDateLong(DateTime date) {
-    const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                    'July', 'August', 'September', 'October', 'November', 'December'];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
@@ -117,7 +92,10 @@ class _AdminScheduleState extends State<AdminSchedule> {
                 const SizedBox(height: 4),
                 const Text(
                   'Pending for Admin Approval',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF1A237E)),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF1A237E),
+                  ),
                 ),
                 const SizedBox(height: 24),
 
@@ -131,16 +109,16 @@ class _AdminScheduleState extends State<AdminSchedule> {
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.grey.shade300),
                   ),
-                  child: const Text('John Doe', style: TextStyle(fontSize: 14)),
+                  child: const Text(
+                    'John Doe',
+                    style: TextStyle(fontSize: 14),
+                  ),
                 ),
                 const SizedBox(height: 20),
 
@@ -160,10 +138,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
                           ),
                           const SizedBox(height: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(8),
@@ -171,16 +146,9 @@ class _AdminScheduleState extends State<AdminSchedule> {
                             ),
                             child: Row(
                               children: [
-                                const Text(
-                                  'mm/dd/yyyy',
-                                  style: TextStyle(fontSize: 14),
-                                ),
+                                const Text('mm/dd/yyyy', style: TextStyle(fontSize: 14)),
                                 const Spacer(),
-                                const Icon(
-                                  Icons.calendar_today,
-                                  size: 18,
-                                  color: Color(0xFF1A237E),
-                                ),
+                                const Icon(Icons.calendar_today, size: 18, color: Color(0xFF1A237E)),
                               ],
                             ),
                           ),
@@ -202,10 +170,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
                           ),
                           const SizedBox(height: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(8),
@@ -213,16 +178,9 @@ class _AdminScheduleState extends State<AdminSchedule> {
                             ),
                             child: Row(
                               children: [
-                                const Text(
-                                  'mm/dd/yyyy',
-                                  style: TextStyle(fontSize: 14),
-                                ),
+                                const Text('mm/dd/yyyy', style: TextStyle(fontSize: 14)),
                                 const Spacer(),
-                                const Icon(
-                                  Icons.calendar_today,
-                                  size: 18,
-                                  color: Color(0xFF1A237E),
-                                ),
+                                const Icon(Icons.calendar_today, size: 18, color: Color(0xFF1A237E)),
                               ],
                             ),
                           ),
@@ -266,9 +224,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
                         onPressed: () {
                           Navigator.of(context).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Leave Request Declined'),
-                            ),
+                            const SnackBar(content: Text('Leave Request Declined')),
                           );
                         },
                         style: ElevatedButton.styleFrom(
@@ -294,9 +250,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
                         onPressed: () {
                           Navigator.of(context).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Leave Request Approved'),
-                            ),
+                            const SnackBar(content: Text('Leave Request Approved')),
                           );
                         },
                         style: ElevatedButton.styleFrom(
@@ -329,7 +283,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
   void _showBranchDetails(String branchName, DateTime date) {
     final assignmentKey = _getAssignmentKey(branchName, date);
     final assignment = _branchAssignments[assignmentKey];
-
+    
     final openingStaff = assignment?['openingStaff'] ?? 'Not Assigned';
     final closingStaff = assignment?['closingStaff'] ?? 'Not Assigned';
     final openingTime = assignment?['openingTime'] ?? '--:--';
@@ -362,11 +316,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(
-                        Icons.calendar_today,
-                        size: 16,
-                        color: Color(0xFF1A237E),
-                      ),
+                      const Icon(Icons.calendar_today, size: 16, color: Color(0xFF1A237E)),
                       const SizedBox(width: 8),
                       Text(
                         'Date: $assignedDate',
@@ -380,7 +330,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
                   ),
                 ),
               if (assignedDate != null) const SizedBox(height: 12),
-
+              
               const Text(
                 'Opening Shift',
                 style: TextStyle(
@@ -402,14 +352,14 @@ class _AdminScheduleState extends State<AdminSchedule> {
                     Row(
                       children: [
                         CircleAvatar(
-                          backgroundColor: openingStaff != 'Not Assigned'
-                              ? const Color(0xFF4CAF50)
+                          backgroundColor: openingStaff != 'Not Assigned' 
+                              ? const Color(0xFF4CAF50) 
                               : Colors.grey.shade300,
                           radius: 15,
                           child: Icon(
                             Icons.person,
-                            color: openingStaff != 'Not Assigned'
-                                ? Colors.white
+                            color: openingStaff != 'Not Assigned' 
+                                ? Colors.white 
                                 : Colors.grey,
                             size: 18,
                           ),
@@ -421,8 +371,8 @@ class _AdminScheduleState extends State<AdminSchedule> {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: openingStaff != 'Not Assigned'
-                                  ? const Color(0xFF1A237E)
+                              color: openingStaff != 'Not Assigned' 
+                                  ? const Color(0xFF1A237E) 
                                   : Colors.grey,
                             ),
                           ),
@@ -432,11 +382,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        const Icon(
-                          Icons.access_time,
-                          size: 16,
-                          color: Color(0xFF1A237E),
-                        ),
+                        const Icon(Icons.access_time, size: 16, color: Color(0xFF1A237E)),
                         const SizedBox(width: 8),
                         Text(
                           openingTime,
@@ -473,14 +419,14 @@ class _AdminScheduleState extends State<AdminSchedule> {
                     Row(
                       children: [
                         CircleAvatar(
-                          backgroundColor: closingStaff != 'Not Assigned'
-                              ? const Color(0xFF4CAF50)
+                          backgroundColor: closingStaff != 'Not Assigned' 
+                              ? const Color(0xFF4CAF50) 
                               : Colors.grey.shade300,
                           radius: 15,
                           child: Icon(
                             Icons.person,
-                            color: closingStaff != 'Not Assigned'
-                                ? Colors.white
+                            color: closingStaff != 'Not Assigned' 
+                                ? Colors.white 
                                 : Colors.grey,
                             size: 18,
                           ),
@@ -492,8 +438,8 @@ class _AdminScheduleState extends State<AdminSchedule> {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: closingStaff != 'Not Assigned'
-                                  ? const Color(0xFF1A237E)
+                              color: closingStaff != 'Not Assigned' 
+                                  ? const Color(0xFF1A237E) 
                                   : Colors.grey,
                             ),
                           ),
@@ -503,11 +449,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        const Icon(
-                          Icons.access_time,
-                          size: 16,
-                          color: Color(0xFF1A237E),
-                        ),
+                        const Icon(Icons.access_time, size: 16, color: Color(0xFF1A237E)),
                         const SizedBox(width: 8),
                         Text(
                           closingTime,
@@ -580,11 +522,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(
-                      Icons.close,
-                      size: 24,
-                      color: Color(0xFF1A237E),
-                    ),
+                    icon: const Icon(Icons.close, size: 24, color: Color(0xFF1A237E)),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                   ),
@@ -595,8 +533,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
                 child: ListView.separated(
                   shrinkWrap: true,
                   itemCount: 4,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 12),
+                  separatorBuilder: (context, index) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     return Container(
                       padding: const EdgeInsets.all(12),
@@ -609,7 +546,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
                             blurRadius: 5,
                             offset: Offset(0, 2),
                           ),
-                        ],
+                        ]
                       ),
                       child: Row(
                         children: [
@@ -640,10 +577,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF5C6BC0),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -697,11 +631,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
                 children: [
                   const Text(
                     'Select Branch',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A237E),
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A237E)),
                   ),
                   const SizedBox(height: 8),
                   Container(
@@ -717,10 +647,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
                         isExpanded: true,
                         hint: const Text('Choose a branch...'),
                         items: _branches.map((branch) {
-                          return DropdownMenuItem(
-                            value: branch,
-                            child: Text(branch),
-                          );
+                          return DropdownMenuItem(value: branch, child: Text(branch));
                         }).toList(),
                         onChanged: (value) {
                           setDialogState(() {
@@ -734,11 +661,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
 
                   const Text(
                     'Select Date',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A237E),
-                    ),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A237E)),
                   ),
                   const SizedBox(height: 8),
                   InkWell(
@@ -756,10 +679,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
                       }
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF5F5F5),
                         borderRadius: BorderRadius.circular(8),
@@ -773,17 +693,11 @@ class _AdminScheduleState extends State<AdminSchedule> {
                                 : _formatDateLong(selectedDate!),
                             style: TextStyle(
                               fontSize: 14,
-                              color: selectedDate != null
-                                  ? const Color(0xFF1A237E)
-                                  : Colors.grey,
+                              color: selectedDate != null ? const Color(0xFF1A237E) : Colors.grey,
                             ),
                           ),
                           const Spacer(),
-                          const Icon(
-                            Icons.calendar_today,
-                            size: 18,
-                            color: Color(0xFF1A237E),
-                          ),
+                          const Icon(Icons.calendar_today, size: 18, color: Color(0xFF1A237E)),
                         ],
                       ),
                     ),
@@ -791,25 +705,12 @@ class _AdminScheduleState extends State<AdminSchedule> {
                   const SizedBox(height: 20),
 
                   Text(
-                    selectedBranch != null
-                        ? '$selectedBranch BRANCH'
-                        : 'ASSIGN STAFF',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
+                    selectedBranch != null ? '${selectedBranch} BRANCH' : 'ASSIGN STAFF',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
                   ),
                   const SizedBox(height: 10),
 
-                  const Text(
-                    'Opening Shift',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: Color(0xFF1A237E),
-                    ),
-                  ),
+                  const Text('Opening Shift', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF1A237E))),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -827,11 +728,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
                               CircleAvatar(
                                 backgroundColor: Colors.grey.shade300,
                                 radius: 15,
-                                child: const Icon(
-                                  Icons.person,
-                                  size: 18,
-                                  color: Color(0xFF1A237E),
-                                ),
+                                child: const Icon(Icons.person, size: 18, color: Color(0xFF1A237E)),
                               ),
                               const SizedBox(width: 10),
                               Expanded(
@@ -839,27 +736,12 @@ class _AdminScheduleState extends State<AdminSchedule> {
                                   child: DropdownButton<String>(
                                     value: openingStaff,
                                     isExpanded: true,
-                                    hint: const Text(
-                                      'Staff Name',
-                                      style: TextStyle(fontSize: 12),
-                                    ),
+                                    hint: const Text('Staff Name', style: TextStyle(fontSize: 12)),
                                     items: const [
-                                      DropdownMenuItem(
-                                        value: 'John Doe',
-                                        child: Text('John Doe'),
-                                      ),
-                                      DropdownMenuItem(
-                                        value: 'Jane Admin',
-                                        child: Text('Jane Admin'),
-                                      ),
-                                      DropdownMenuItem(
-                                        value: 'Maria Santos',
-                                        child: Text('Maria Santos'),
-                                      ),
-                                      DropdownMenuItem(
-                                        value: 'Pedro Cruz',
-                                        child: Text('Pedro Cruz'),
-                                      ),
+                                      DropdownMenuItem(value: 'John Doe', child: Text('John Doe')),
+                                      DropdownMenuItem(value: 'Jane Admin', child: Text('Jane Admin')),
+                                      DropdownMenuItem(value: 'Maria Santos', child: Text('Maria Santos')),
+                                      DropdownMenuItem(value: 'Pedro Cruz', child: Text('Pedro Cruz')),
                                     ],
                                     onChanged: (val) {
                                       setDialogState(() => openingStaff = val);
@@ -877,65 +759,43 @@ class _AdminScheduleState extends State<AdminSchedule> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Opening Shift Time In',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Color(0xFF1A237E),
-                              ),
-                            ),
+                            const Text('Opening Shift Time In', style: TextStyle(fontSize: 10, color: Color(0xFF1A237E))),
                             InkWell(
                               onTap: () async {
                                 final TimeOfDay? picked = await showTimePicker(
                                   context: context,
                                   initialTime: openingTime ?? TimeOfDay.now(),
                                   initialEntryMode: TimePickerEntryMode.input,
-                                  builder:
-                                      (BuildContext context, Widget? child) {
-                                        return MediaQuery(
-                                          data: MediaQuery.of(context).copyWith(
-                                            alwaysUse24HourFormat: false,
-                                          ),
-                                          child: child!,
-                                        );
-                                      },
+                                  builder: (BuildContext context, Widget? child) {
+                                    return MediaQuery(
+                                      data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
+                                      child: child!,
+                                    );
+                                  },
                                 );
                                 if (picked != null) {
                                   setDialogState(() => openingTime = picked);
                                 }
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 12,
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFF5F5F5),
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Colors.grey.shade300,
-                                  ),
+                                  border: Border.all(color: Colors.grey.shade300),
                                 ),
                                 child: Row(
                                   children: [
                                     Text(
-                                      openingTime != null
-                                          ? openingTime!.format(context)
-                                          : 'Select Time',
+                                      openingTime != null ? openingTime!.format(context) : 'Select Time',
                                       style: TextStyle(
-                                        fontSize: 12,
+                                        fontSize: 12, 
                                         fontWeight: FontWeight.bold,
-                                        color: openingTime != null
-                                            ? const Color(0xFF1A237E)
-                                            : Colors.grey,
+                                        color: openingTime != null ? const Color(0xFF1A237E) : Colors.grey,
                                       ),
                                     ),
                                     const Spacer(),
-                                    const Icon(
-                                      Icons.access_time,
-                                      size: 16,
-                                      color: Color(0xFF1A237E),
-                                    ),
+                                    const Icon(Icons.access_time, size: 16, color: Color(0xFF1A237E)),
                                   ],
                                 ),
                               ),
@@ -948,14 +808,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
 
                   const SizedBox(height: 16),
 
-                  const Text(
-                    'Closing Shift',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: Color(0xFF1A237E),
-                    ),
-                  ),
+                  const Text('Closing Shift', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF1A237E))),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -973,11 +826,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
                               CircleAvatar(
                                 backgroundColor: Colors.grey.shade300,
                                 radius: 15,
-                                child: const Icon(
-                                  Icons.person,
-                                  size: 18,
-                                  color: Color(0xFF1A237E),
-                                ),
+                                child: const Icon(Icons.person, size: 18, color: Color(0xFF1A237E)),
                               ),
                               const SizedBox(width: 10),
                               Expanded(
@@ -985,27 +834,12 @@ class _AdminScheduleState extends State<AdminSchedule> {
                                   child: DropdownButton<String>(
                                     value: closingStaff,
                                     isExpanded: true,
-                                    hint: const Text(
-                                      'Staff Name',
-                                      style: TextStyle(fontSize: 12),
-                                    ),
+                                    hint: const Text('Staff Name', style: TextStyle(fontSize: 12)),
                                     items: const [
-                                      DropdownMenuItem(
-                                        value: 'John Doe',
-                                        child: Text('John Doe'),
-                                      ),
-                                      DropdownMenuItem(
-                                        value: 'Jane Admin',
-                                        child: Text('Jane Admin'),
-                                      ),
-                                      DropdownMenuItem(
-                                        value: 'Maria Santos',
-                                        child: Text('Maria Santos'),
-                                      ),
-                                      DropdownMenuItem(
-                                        value: 'Pedro Cruz',
-                                        child: Text('Pedro Cruz'),
-                                      ),
+                                      DropdownMenuItem(value: 'John Doe', child: Text('John Doe')),
+                                      DropdownMenuItem(value: 'Jane Admin', child: Text('Jane Admin')),
+                                      DropdownMenuItem(value: 'Maria Santos', child: Text('Maria Santos')),
+                                      DropdownMenuItem(value: 'Pedro Cruz', child: Text('Pedro Cruz')),
                                     ],
                                     onChanged: (val) {
                                       setDialogState(() => closingStaff = val);
@@ -1023,65 +857,43 @@ class _AdminScheduleState extends State<AdminSchedule> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Closing Shift Time In',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Color(0xFF1A237E),
-                              ),
-                            ),
+                            const Text('Closing Shift Time In', style: TextStyle(fontSize: 10, color: Color(0xFF1A237E))),
                             InkWell(
                               onTap: () async {
                                 final TimeOfDay? picked = await showTimePicker(
                                   context: context,
                                   initialTime: closingTime ?? TimeOfDay.now(),
                                   initialEntryMode: TimePickerEntryMode.input,
-                                  builder:
-                                      (BuildContext context, Widget? child) {
-                                        return MediaQuery(
-                                          data: MediaQuery.of(context).copyWith(
-                                            alwaysUse24HourFormat: false,
-                                          ),
-                                          child: child!,
-                                        );
-                                      },
+                                  builder: (BuildContext context, Widget? child) {
+                                    return MediaQuery(
+                                      data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
+                                      child: child!,
+                                    );
+                                  },
                                 );
                                 if (picked != null) {
                                   setDialogState(() => closingTime = picked);
                                 }
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 12,
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFF5F5F5),
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Colors.grey.shade300,
-                                  ),
+                                  border: Border.all(color: Colors.grey.shade300),
                                 ),
                                 child: Row(
                                   children: [
                                     Text(
-                                      closingTime != null
-                                          ? closingTime!.format(context)
-                                          : 'Select Time',
+                                      closingTime != null ? closingTime!.format(context) : 'Select Time',
                                       style: TextStyle(
-                                        fontSize: 12,
+                                        fontSize: 12, 
                                         fontWeight: FontWeight.bold,
-                                        color: closingTime != null
-                                            ? const Color(0xFF1A237E)
-                                            : Colors.grey,
+                                        color: closingTime != null ? const Color(0xFF1A237E) : Colors.grey,
                                       ),
                                     ),
                                     const Spacer(),
-                                    const Icon(
-                                      Icons.access_time,
-                                      size: 16,
-                                      color: Color(0xFF1A237E),
-                                    ),
+                                    const Icon(Icons.access_time, size: 16, color: Color(0xFF1A237E)),
                                   ],
                                 ),
                               ),
@@ -1091,7 +903,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
                       ),
                     ],
                   ),
-
+                  
                   const SizedBox(height: 24),
 
                   SizedBox(
@@ -1100,40 +912,29 @@ class _AdminScheduleState extends State<AdminSchedule> {
                       onPressed: () {
                         if (selectedBranch != null && selectedDate != null) {
                           final formattedDate = _formatDateLong(selectedDate!);
-                          final assignmentKey = _getAssignmentKey(
-                            selectedBranch!,
-                            selectedDate!,
-                          );
-
+                          final assignmentKey = _getAssignmentKey(selectedBranch!, selectedDate!);
+                          
                           setState(() {
                             _branchAssignments[assignmentKey] = {
                               'openingStaff': openingStaff ?? 'Not Assigned',
                               'closingStaff': closingStaff ?? 'Not Assigned',
-                              'openingTime': openingTime != null
-                                  ? openingTime!.format(context)
-                                  : '--:--',
-                              'closingTime': closingTime != null
-                                  ? closingTime!.format(context)
-                                  : '--:--',
+                              'openingTime': openingTime != null ? openingTime!.format(context) : '--:--',
+                              'closingTime': closingTime != null ? closingTime!.format(context) : '--:--',
                               'date': formattedDate,
                             };
                           });
-
+                          
                           Navigator.of(context).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(
-                                'Staff assigned to $selectedBranch on $formattedDate successfully!',
-                              ),
+                              content: Text('Staff assigned to $selectedBranch on $formattedDate successfully!'),
                               backgroundColor: Colors.green,
                             ),
                           );
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text(
-                                'Please select a branch and date first',
-                              ),
+                              content: Text('Please select a branch and date first'),
                               backgroundColor: Colors.red,
                             ),
                           );
@@ -1142,17 +943,11 @@ class _AdminScheduleState extends State<AdminSchedule> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF4CAF50),
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                       child: const Text(
                         'Assign and Notify Staff',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
                       ),
                     ),
                   ),
@@ -1161,44 +956,6 @@ class _AdminScheduleState extends State<AdminSchedule> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
- void _navigateTo(String pageName) {
-    String? routeName;
-    switch (pageName) {
-      case 'Staff Management':
-        routeName = AppRouter.adminStaffManagement;
-        break;
-      case 'Services':
-        routeName = AppRouter.adminServices;
-        break;
-      case 'Schedule':
-        routeName = AppRouter.adminSchedule;
-        break;
-      case 'Reports':
-        routeName = AppRouter.adminreports;
-        break;
-      case 'Customized Orders':
-        routeName = AppRouter.adminCustomOrders;
-        break;
-      case 'Notifications':
-        routeName = AppRouter.notifications;
-        break;
-    }
-    if (routeName != null) {
-      Navigator.pushReplacementNamed(
-        context,
-        routeName,
-        arguments: routeName == AppRouter.notifications ? true : null,
-      );
-      return;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$pageName not connected yet.'),
-        duration: const Duration(seconds: 1),
       ),
     );
   }
@@ -1221,11 +978,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
         child: Row(
           children: [
             Padding(
-              padding: const EdgeInsets.only(
-                top: 20.0,
-                bottom: 20.0,
-                left: 20.0,
-              ),
+              padding: const EdgeInsets.only(top: 20.0, bottom: 20.0, left: 20.0),
               child: Container(
                 width: 240,
                 decoration: BoxDecoration(
@@ -1243,24 +996,12 @@ class _AdminScheduleState extends State<AdminSchedule> {
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Row(
                         children: [
-                          ClipOval(
-                            child: Image.asset(
-                              'assets/logo.png',
-                              width: 42,
-                              height: 42,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
+                          ClipOval(child: Image.asset('assets/logo.jpg', width: 42, height: 42, fit: BoxFit.cover)),
                           const SizedBox(width: 10),
                           const Expanded(
                             child: Text(
                               'Cam2print System',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                fontStyle: FontStyle.italic,
-                              ),
+                              style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, fontStyle: FontStyle.italic),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -1268,84 +1009,28 @@ class _AdminScheduleState extends State<AdminSchedule> {
                       ),
                     ),
                     const SizedBox(height: 40),
-                    _buildSidebarItem(
-                      Icons.people,
-                      "Staff Management",
-                      () => _navigateTo('Staff Management'),
-                    ),
-                    _buildSidebarItem(
-                      Icons.inventory_2,
-                      "Overall Inventory",
-                      () => _navigateTo('Overall Inventory'),
-                    ),
-                    _buildSidebarItem(
-                      Icons.settings,
-                      "Services",
-                      () => _navigateTo('Services'),
-                    ),
-                    _buildSidebarItem(
-                      Icons.attach_money,
-                      "Salary",
-                      () => _navigateTo('Salary'),
-                    ),
-                    _buildSidebarItem(
-                      Icons.shopping_cart,
-                      "Customized Orders",
-                      () => _navigateTo('Customized Orders'),
-                    ),
-                    _buildSidebarItem(
-                      Icons.calendar_today,
-                      "Schedule",
-                      () => _navigateTo('Schedule'),
-                      isActive: true,
-                    ),
-                    _buildSidebarItem(
-                      Icons.error_outline,
-                      "Reports",
-                      () => _navigateTo('Reports'),
-                    ),
-                    const Spacer(),
+                    _buildSidebarItem(Icons.inventory_2, "Overall Inventory", () {}),
+                    _buildSidebarItem(Icons.design_services, "Services", () {}),
+                    _buildSidebarItem(Icons.monetization_on, "Salary", () {}),
+                    _buildSidebarItem(Icons.shopping_cart, "Customized Orders", () {}),
                     Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 16,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 3),
                       child: Material(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                        child: InkWell(
-                          onTap: () => Navigator.pushReplacementNamed(
-                            context,
-                            AppRouter.login,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 12,
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.logout,
-                                  color: Colors.white70,
-                                  size: 20,
-                                ),
-                                SizedBox(width: 12),
-                                Text(
-                                  'Logout',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              Icon(Icons.event_available, color: Colors.white, size: 20),
+                              const SizedBox(width: 12),
+                              Text("Schedule", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                            ],
                           ),
                         ),
                       ),
                     ),
+                    _buildSidebarItem(Icons.analytics, "Reports", () {}),
                   ],
                 ),
               ),
@@ -1358,10 +1043,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 25,
-                        vertical: 15,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
                       decoration: const BoxDecoration(
                         color: Color(0xFFE3F2FD),
                         borderRadius: BorderRadius.all(Radius.circular(20)),
@@ -1369,53 +1051,18 @@ class _AdminScheduleState extends State<AdminSchedule> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            "Saturday/ January 31, 2026",
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
-                              color: Color(0xFF1A237E),
-                            ),
-                          ),
+                          const Text("Saturday/ January 31, 2026", style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14, color: Color(0xFF1A237E))),
                           Row(
                             children: [
-                              GestureDetector(
-                                onTap: () => _navigateTo('Notifications'),
-                                child: const Icon(
-                                  Icons.notifications_none,
-                                  color: Color(0xFF1A237E),
-                                  size: 24,
-                                ),
-                              ),
+                              const Icon(Icons.notifications_none, color: Color(0xFF1A237E), size: 24),
                               const SizedBox(width: 20),
-                              const CircleAvatar(
-                                radius: 18,
-                                backgroundColor: Colors.white,
-                                child: Icon(
-                                  Icons.person,
-                                  size: 26,
-                                  color: Color(0xFF1A237E),
-                                ),
-                              ),
+                              const CircleAvatar(radius: 18, backgroundColor: Colors.white, child: Icon(Icons.person, size: 26, color: Color(0xFF1A237E))),
                               const SizedBox(width: 10),
                               const Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    "Jane",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      color: Color(0xFF1A237E),
-                                    ),
-                                  ),
-                                  Text(
-                                    "Admin",
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Color(0xFF1A237E),
-                                    ),
-                                  ),
+                                  Text("Jane", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1A237E))),
+                                  Text("Admin", style: TextStyle(fontSize: 11, color: Color(0xFF1A237E))),
                                 ],
                               ),
                             ],
@@ -1423,7 +1070,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
                         ],
                       ),
                     ),
-
+                    
                     const SizedBox(height: 10),
 
                     Align(
@@ -1435,44 +1082,20 @@ class _AdminScheduleState extends State<AdminSchedule> {
                             onPressed: _showLeaveRequestsDialog,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF5C6BC0),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
-                            child: const Text(
-                              "Leave Requests",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            child: const Text("Leave Requests", style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                           ),
                           const SizedBox(width: 8),
                           ElevatedButton(
                             onPressed: _showAssignStaffDialog,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF1A237E),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
-                            child: const Text(
-                              "Assign Staff per Branch",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            child: const Text("Assign Staff per Branch", style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
@@ -1490,34 +1113,13 @@ class _AdminScheduleState extends State<AdminSchedule> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.arrow_back_ios,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            onPressed: _previousWeek,
-                          ),
-                          Text(
-                            "${_formatDate(start).toUpperCase()} - ${_formatDate(end).toUpperCase()}, ${end.year}",
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.arrow_forward_ios,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            onPressed: _nextWeek,
-                          ),
+                          IconButton(icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20), onPressed: _previousWeek),
+                          Text("${_formatDate(start).toUpperCase()} - ${_formatDate(end).toUpperCase()}, ${end.year}", style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                          IconButton(icon: const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20), onPressed: _nextWeek),
                         ],
                       ),
                     ),
-
+                    
                     const SizedBox(height: 15),
 
                     Expanded(
@@ -1539,38 +1141,21 @@ class _AdminScheduleState extends State<AdminSchedule> {
     );
   }
 
-  Widget _buildSidebarItem(
-    IconData icon,
-    String title,
-    VoidCallback onTap, {
-    bool isActive = false,
-  }) {
+  Widget _buildSidebarItem(IconData icon, String title, VoidCallback onTap) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 3),
       child: Material(
-        color: isActive ? Colors.white : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                Icon(
-                  icon,
-                  color: isActive ? const Color(0xFF1A237E) : Colors.white70,
-                  size: 20,
-                ),
+                Icon(icon, color: Colors.white70, size: 20),
                 const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: isActive ? const Color(0xFF1A237E) : Colors.white,
-                    fontSize: 13,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                  ),
-                ),
+                Text(title, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
               ],
             ),
           ),
@@ -1580,15 +1165,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
   }
 
   Widget _buildDayCard(DateTime date) {
-    const days = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
-    ];
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -1599,21 +1176,13 @@ class _AdminScheduleState extends State<AdminSchedule> {
             child: Column(
               children: [
                 Text(
-                  days[date.weekday - 1].toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  days[date.weekday - 1].toUpperCase(), 
+                  style: const TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  "${date.day}",
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  "${date.day}", 
+                  style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)
                 ),
               ],
             ),
@@ -1630,50 +1199,21 @@ class _AdminScheduleState extends State<AdminSchedule> {
                 itemBuilder: (context, index) {
                   return Container(
                     margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Flexible(
-                          child: Text(
-                            _branches[index],
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1A237E),
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
+                        Flexible(child: Text(_branches[index], style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF1A237E)), overflow: TextOverflow.ellipsis)),
                         ElevatedButton(
-                          onPressed: () =>
-                              _showBranchDetails(_branches[index], date),
+                          onPressed: () => _showBranchDetails(_branches[index], date),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF4CAF50),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 0,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
                             minimumSize: const Size(0, 20),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                           ),
-                          child: const Text(
-                            "VIEW",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 8,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          child: const Text("VIEW", style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),

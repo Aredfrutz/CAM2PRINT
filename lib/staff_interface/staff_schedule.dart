@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/app/app_router.dart';
 
 class StaffSchedule extends StatefulWidget {
   const StaffSchedule({super.key});
@@ -44,20 +43,8 @@ class _StaffScheduleState extends State<StaffSchedule> {
   }
 
   String _formatDate(DateTime date) {
-    const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                    'July', 'August', 'September', 'October', 'November', 'December'];
     return '${months[date.month - 1]} ${date.day}';
   }
 
@@ -79,54 +66,28 @@ class _StaffScheduleState extends State<StaffSchedule> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Opening Shift',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                  color: Color(0xFF1A237E),
-                ),
-              ),
+              const Text('Opening Shift', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF1A237E))),
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                decoration: BoxDecoration(color: const Color(0xFFF5F5F5), borderRadius: BorderRadius.circular(8)),
                 child: const Row(
                   children: [
-                    CircleAvatar(
-                      backgroundColor: Color(0xFFBDBDBD),
-                      child: Icon(Icons.person, color: Color(0x99000000)),
-                    ),
+                    CircleAvatar(backgroundColor: Color(0xFFBDBDBD), child: Icon(Icons.person, color: Color(0x99000000))),
                     SizedBox(width: 12),
                     Text('Staff Name', style: TextStyle(fontSize: 14)),
                   ],
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Closing Shift',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                  color: Color(0xFF1A237E),
-                ),
-              ),
+              const Text('Closing Shift', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF1A237E))),
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                decoration: BoxDecoration(color: const Color(0xFFF5F5F5), borderRadius: BorderRadius.circular(8)),
                 child: const Row(
                   children: [
-                    CircleAvatar(
-                      backgroundColor: Color(0xFFBDBDBD),
-                      child: Icon(Icons.person, color: Color(0x99000000)),
-                    ),
+                    CircleAvatar(backgroundColor: Color(0xFFBDBDBD), child: Icon(Icons.person, color: Color(0x99000000))),
                     SizedBox(width: 12),
                     Text('Staff Name', style: TextStyle(fontSize: 14)),
                   ],
@@ -136,10 +97,7 @@ class _StaffScheduleState extends State<StaffSchedule> {
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Close')),
         ],
       ),
     );
@@ -167,27 +125,13 @@ class _StaffScheduleState extends State<StaffSchedule> {
               children: [
                 const Text(
                   'Leave Request',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A237E),
-                  ),
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1A237E)),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'Submit for Admin Approval',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
+                const Text('Submit for Admin Approval', style: TextStyle(fontSize: 12, color: Colors.grey)),
                 const SizedBox(height: 24),
 
-                const Text(
-                  'STAFF NAME',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A237E),
-                  ),
-                ),
+                const Text('STAFF NAME', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A237E))),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -198,12 +142,7 @@ class _StaffScheduleState extends State<StaffSchedule> {
                   ),
                   child: const Row(
                     children: [
-                      Expanded(
-                        child: Text(
-                          'Select Staff',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ),
+                      Expanded(child: Text('Select Staff', style: TextStyle(color: Colors.grey))),
                       Icon(Icons.keyboard_arrow_down, color: Color(0xFF1A237E)),
                     ],
                   ),
@@ -216,14 +155,7 @@ class _StaffScheduleState extends State<StaffSchedule> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'START DATE',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF1A237E),
-                            ),
-                          ),
+                          const Text('START DATE', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A237E))),
                           const SizedBox(height: 8),
                           InkWell(
                             onTap: () async {
@@ -234,16 +166,11 @@ class _StaffScheduleState extends State<StaffSchedule> {
                                 lastDate: DateTime(2030),
                               );
                               if (picked != null) {
-                                setDialogState(
-                                  () => selectedStartDate = picked,
-                                );
+                                setDialogState(() => selectedStartDate = picked);
                               }
                             },
                             child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF5F5F5),
                                 borderRadius: BorderRadius.circular(8),
@@ -257,17 +184,11 @@ class _StaffScheduleState extends State<StaffSchedule> {
                                         : '${selectedStartDate!.month.toString().padLeft(2, '0')}/${selectedStartDate!.day.toString().padLeft(2, '0')}/${selectedStartDate!.year}',
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: selectedStartDate != null
-                                          ? const Color(0xFF1A237E)
-                                          : Colors.grey,
+                                      color: selectedStartDate != null ? const Color(0xFF1A237E) : Colors.grey,
                                     ),
                                   ),
                                   const Spacer(),
-                                  const Icon(
-                                    Icons.calendar_today,
-                                    size: 18,
-                                    color: Color(0xFF1A237E),
-                                  ),
+                                  const Icon(Icons.calendar_today, size: 18, color: Color(0xFF1A237E)),
                                 ],
                               ),
                             ),
@@ -280,14 +201,7 @@ class _StaffScheduleState extends State<StaffSchedule> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'END DATE',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF1A237E),
-                            ),
-                          ),
+                          const Text('END DATE', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A237E))),
                           const SizedBox(height: 8),
                           InkWell(
                             onTap: () async {
@@ -302,10 +216,7 @@ class _StaffScheduleState extends State<StaffSchedule> {
                               }
                             },
                             child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF5F5F5),
                                 borderRadius: BorderRadius.circular(8),
@@ -319,17 +230,11 @@ class _StaffScheduleState extends State<StaffSchedule> {
                                         : '${selectedEndDate!.month.toString().padLeft(2, '0')}/${selectedEndDate!.day.toString().padLeft(2, '0')}/${selectedEndDate!.year}',
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: selectedEndDate != null
-                                          ? const Color(0xFF1A237E)
-                                          : Colors.grey,
+                                      color: selectedEndDate != null ? const Color(0xFF1A237E) : Colors.grey,
                                     ),
                                   ),
                                   const Spacer(),
-                                  const Icon(
-                                    Icons.calendar_today,
-                                    size: 18,
-                                    color: Color(0xFF1A237E),
-                                  ),
+                                  const Icon(Icons.calendar_today, size: 18, color: Color(0xFF1A237E)),
                                 ],
                               ),
                             ),
@@ -341,14 +246,7 @@ class _StaffScheduleState extends State<StaffSchedule> {
                 ),
                 const SizedBox(height: 20),
 
-                const Text(
-                  'REASON FOR LEAVE',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A237E),
-                  ),
-                ),
+                const Text('REASON FOR LEAVE', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A237E))),
                 const SizedBox(height: 8),
                 Container(
                   height: 150,
@@ -377,25 +275,14 @@ class _StaffScheduleState extends State<StaffSchedule> {
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Saved as Draft')),
-                          );
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved as Draft')));
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFE53935),
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
-                        child: const Text(
-                          'Save as Draft',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
+                        child: const Text('Save as Draft', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -403,107 +290,17 @@ class _StaffScheduleState extends State<StaffSchedule> {
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Leave Request Submitted!'),
-                            ),
-                          );
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Leave Request Submitted!')));
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF43A047),
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
-                        child: const Text(
-                          'Submit',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
+                        child: const Text('Submit', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
                       ),
                     ),
                   ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _navigateTo(String pageName) {
-    String? routeName;
-    switch (pageName) {
-      case 'Services':
-        routeName = AppRouter.staffServices;
-        break;
-      case 'Daily Inventory':
-        routeName = AppRouter.staffDailyInv;
-        break;
-      case 'Salary':
-        routeName = AppRouter.staffServices;
-        break;
-      case 'Consumption Tracker':
-        routeName = AppRouter.staffConsumptionTracker;
-        break;
-      case 'Customized Orders':
-        routeName = AppRouter.staffCustomizedOrders;
-        break;
-      case 'Schedule':
-        routeName = AppRouter.staffSchedule;
-        break;
-      case 'Notifications':
-        routeName = AppRouter.notifications;
-        break;
-    }
-
-    if (routeName != null) {
-      Navigator.pushReplacementNamed(
-        context,
-        routeName,
-        arguments: routeName == AppRouter.notifications ? false : null,
-      );
-      return;
-    }
-  }
-
-  // ✅ ADMIN/DAILYINV STYLE SIDEBAR ITEM
-  Widget _buildSidebarItem(
-    IconData icon,
-    String title,
-    VoidCallback onTap, {
-    bool isActive = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-      child: Material(
-        color: isActive ? Colors.white : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(
-              children: [
-                Icon(
-                  icon,
-                  color: isActive ? const Color(0xFF1A237E) : Colors.white70,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: isActive ? const Color(0xFF1A237E) : Colors.white,
-                    fontSize: 13,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                  ),
                 ),
               ],
             ),
@@ -525,24 +322,17 @@ class _StaffScheduleState extends State<StaffSchedule> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF7C88C2), Color(0xFFFFFFFF)],
+            colors: [Color(0xFF9FA8DA), Color(0xFFFFFFFF)],
           ),
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch, // ✅ FIX: Stretch row height
           children: [
-            // ✅ SIDEBAR - Staff Style Applied
             Padding(
-              padding: const EdgeInsets.only(
-                top: 20.0,
-                bottom: 20.0,
-                left: 20.0,
-              ),
+              padding: const EdgeInsets.only(top: 20.0, bottom: 20.0, left: 20.0),
               child: Container(
                 width: 240,
-                height: double.infinity, // ✅ FIX: Force full height
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
+                  gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [Color(0xFF5B6388), Color(0xFF3E4563)],
@@ -550,31 +340,18 @@ class _StaffScheduleState extends State<StaffSchedule> {
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: Column(
-                  mainAxisSize: MainAxisSize.max, // ✅ FIX: Expand to fill height
                   children: [
                     const SizedBox(height: 30),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Row(
                         children: [
-                          ClipOval(
-                            child: Image.asset(
-                              'assets/logo.png',
-                              width: 42,
-                              height: 42,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
+                          ClipOval(child: Image.asset('assets/logo.jpg', width: 42, height: 42, fit: BoxFit.cover)),
                           const SizedBox(width: 10),
                           const Expanded(
                             child: Text(
                               'Cam2print System',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                fontStyle: FontStyle.italic,
-                              ),
+                              style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, fontStyle: FontStyle.italic),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -582,80 +359,24 @@ class _StaffScheduleState extends State<StaffSchedule> {
                       ),
                     ),
                     const SizedBox(height: 40),
-                    
-                    // ✅ STAFF NAVIGATION - DailyInv Style
-                    _buildSidebarItem(
-                      Icons.inventory_2,
-                      "Daily Inventory",
-                      () => _navigateTo('Daily Inventory'),
-                    ),
-                    _buildSidebarItem(
-                      Icons.design_services,
-                      "Services",
-                      () => _navigateTo('Services'),
-                    ),
-                    _buildSidebarItem(
-                      Icons.monetization_on,
-                      "Salary",
-                      () => _navigateTo('Salary'),
-                    ),
-                    _buildSidebarItem(
-                      Icons.shopping_cart,
-                      "Consumption Tracker",
-                      () => _navigateTo('Consumption Tracker'),
-                    ),
-                    _buildSidebarItem(
-                      Icons.shopping_bag,
-                      "Customized Orders",
-                      () => _navigateTo('Customized Orders'),
-                    ),
-                    _buildSidebarItem(
-                      Icons.event_available,
-                      "Schedule",
-                      () => _navigateTo('Schedule'),
-                      isActive: true, // ✅ Active highlight for Schedule page
-                    ),
-                    
-                    const Spacer(), // ✅ Pushes logout to bottom
-                    
-                    // ✅ LOGOUT BUTTON - DailyInv Style
+                    _buildSidebarItem(Icons.inventory_2, "Daily Inventory", () {}),
+                    _buildSidebarItem(Icons.design_services, "Services", () {}),
+                    _buildSidebarItem(Icons.monetization_on, "Salary", () {}),
+                    _buildSidebarItem(Icons.shopping_cart, "Consumption Tracker", () {}),
+                    _buildSidebarItem(Icons.shopping_bag, "Customized Orders", () {}),
                     Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 16,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 3),
                       child: Material(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                        child: InkWell(
-                          onTap: () => Navigator.pushReplacementNamed(
-                            context,
-                            AppRouter.login,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 12,
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.logout,
-                                  color: Colors.white70,
-                                  size: 20,
-                                ),
-                                SizedBox(width: 12),
-                                Text(
-                                  'Logout',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              Icon(Icons.event_available, color: Colors.white, size: 20),
+                              const SizedBox(width: 12),
+                              Text("Schedule", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                            ],
                           ),
                         ),
                       ),
@@ -672,70 +393,26 @@ class _StaffScheduleState extends State<StaffSchedule> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 30,
-                        vertical: 15,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
                       decoration: const BoxDecoration(
-                        color: Color(0xFFB3D4FF),
+                        color: Color(0xFFE3F2FD),
                         borderRadius: BorderRadius.all(Radius.circular(20)),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            "Saturday, January 31, 2026",
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
-                              color: Color(0xFF1A237E),
-                            ),
-                          ),
+                          const Text("Saturday/ January 31, 2026", style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14, color: Color(0xFF1A237E))),
                           Row(
                             children: [
-                              GestureDetector(
-                                onTap: () => _navigateTo('Notifications'),
-                                child: const Icon(
-                                  Icons.notifications_none,
-                                  color: Color(0xFF1A237E),
-                                  size: 24,
-                                ),
-                              ),
+                              const Icon(Icons.notifications_none, color: Color(0xFF1A237E), size: 24),
                               const SizedBox(width: 20),
-                              GestureDetector(
-                                onTap: () => Navigator.pushReplacementNamed(
-                                  context,
-                                  AppRouter.staffProfile,
-                                ),
-                                child: const CircleAvatar(
-                                  radius: 18,
-                                  backgroundColor: Colors.white,
-                                  child: Icon(
-                                    Icons.person,
-                                    size: 26,
-                                    color: Color(0xFF1A237E),
-                                  ),
-                                ),
-                              ),
+                              const CircleAvatar(radius: 18, backgroundColor: Colors.white, child: Icon(Icons.person, size: 26, color: Color(0xFF1A237E))),
                               const SizedBox(width: 10),
                               const Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    "Jane",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      color: Color(0xFF1A237E),
-                                    ),
-                                  ),
-                                  Text(
-                                    "Staff",
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Color(0xFF1A237E),
-                                    ),
-                                  ),
+                                  Text("Jane", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1A237E))),
+                                  Text("Admin", style: TextStyle(fontSize: 11, color: Color(0xFF1A237E))),
                                 ],
                               ),
                             ],
@@ -743,35 +420,19 @@ class _StaffScheduleState extends State<StaffSchedule> {
                         ],
                       ),
                     ),
-
+                    
                     Align(
                       alignment: Alignment.centerRight,
                       child: Padding(
-                        padding: const EdgeInsets.only(
-                          top: 10,
-                          bottom: 10,
-                          right: 25,
-                        ),
+                        padding: const EdgeInsets.only(top: 10, bottom: 10, right: 25),
                         child: ElevatedButton(
                           onPressed: () => _showLeaveRequestForm(),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF1A237E),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 15,
-                              vertical: 10,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           ),
-                          child: const Text(
-                            "Leave Request Form",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          child: const Text("Leave Request Form", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                         ),
                       ),
                     ),
@@ -788,34 +449,13 @@ class _StaffScheduleState extends State<StaffSchedule> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.arrow_back_ios,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            onPressed: _previousWeek,
-                          ),
-                          Text(
-                            "${_formatDate(start).toUpperCase()} - ${_formatDate(end).toUpperCase()}, ${end.year}",
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.arrow_forward_ios,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            onPressed: _nextWeek,
-                          ),
+                          IconButton(icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20), onPressed: _previousWeek),
+                          Text("${_formatDate(start).toUpperCase()} - ${_formatDate(end).toUpperCase()}, ${end.year}", style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                          IconButton(icon: const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20), onPressed: _nextWeek),
                         ],
                       ),
                     ),
-
+                    
                     const SizedBox(height: 15),
 
                     Expanded(
@@ -837,16 +477,31 @@ class _StaffScheduleState extends State<StaffSchedule> {
     );
   }
 
+  Widget _buildSidebarItem(IconData icon, String title, VoidCallback onTap) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 3),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Icon(icon, color: Colors.white70, size: 20),
+                const SizedBox(width: 12),
+                Text(title, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildDayCard(DateTime date) {
-    const days = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
-    ];
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -856,23 +511,9 @@ class _StaffScheduleState extends State<StaffSchedule> {
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
             child: Column(
               children: [
-                Text(
-                  days[date.weekday - 1].toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                Text(days[date.weekday - 1].toUpperCase(), style: const TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.w500)),
                 const SizedBox(height: 2),
-                Text(
-                  "${date.day}",
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                Text("${date.day}", style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -888,49 +529,21 @@ class _StaffScheduleState extends State<StaffSchedule> {
                 itemBuilder: (context, index) {
                   return Container(
                     margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Flexible(
-                          child: Text(
-                            _branches[index],
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1A237E),
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
+                        Flexible(child: Text(_branches[index], style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF1A237E)), overflow: TextOverflow.ellipsis)),
                         ElevatedButton(
                           onPressed: () => _showBranchDetails(_branches[index]),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF4CAF50),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 0,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
                             minimumSize: const Size(0, 20),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                           ),
-                          child: const Text(
-                            "VIEW",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 8,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          child: const Text("VIEW", style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
