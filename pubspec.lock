@@ -89,6 +89,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.9"
+  currency_text_input_formatter:
+    dependency: "direct main"
+    description:
+      name: currency_text_input_formatter
+      sha256: "7ca90006337241559caea445699b4b32f4e198676728541604fa9521d0d4f75a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.0"
   exif:
     dependency: "direct main"
     description:
@@ -153,6 +161,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.9.3+5"
+  flexible_wrap:
+    dependency: "direct main"
+    description:
+      name: flexible_wrap
+      sha256: de2ead1df796ef377bdbba1554580336f85d3f551e2484f3be950ac80a218b2b
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.7"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -400,6 +416,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.17.6"
+  number_text_input_formatter:
+    dependency: "direct main"
+    description:
+      name: number_text_input_formatter
+      sha256: "9f9bfd3950de5c451a0298e69a386c5be6ea623c1e992446b3bc5823ca01dde5"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0+9"
   objective_c:
     dependency: transitive
     description:
@@ -597,6 +621,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
+  wrapfit:
+    dependency: "direct main"
+    description:
+      name: wrapfit
+      sha256: "59132db2f42997a2463e548ce05201c909bb579cabc33ed7130812df1510f667"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.1"
   xdg_directories:
     dependency: transitive
     description:

@@ -112,10 +112,90 @@ class _AppShellPageState extends State<AppShellPage> {
           Container(width: 16),
         ],
       ),
-      body: Row(
+      body: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          if (constraints.maxWidth > 800) {
+            return _wideScreenView();
+          } else {
+            return _thinScreenView();
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _wideScreenView() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: screenWidth, minWidth: 492),
+
+      child: Row(
         children: [
           NavigationRail(
             backgroundColor: Theme.of(context).colorScheme.secondary,
+            extended: true,
+            labelType: NavigationRailLabelType.none,
+            selectedIndex: AppModule.values.indexOf(selected),
+            onDestinationSelected: (index) {
+              setState(() => selected = AppModule.values[index]);
+            },
+            destinations: AppModule.values
+                .map(
+                  (module) => NavigationRailDestination(
+                    icon: Icon(module.icon),
+                    label: Text(module.label),
+                  ),
+                )
+                .toList(),
+          ),
+
+          SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: Container(
+              width: screenWidth - 256,
+
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    /*Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)*/ Color(
+                      0xFF7ca8f9,
+                    ),
+                    Theme.of(
+                      context,
+                    ).colorScheme.tertiary.withValues(alpha: 0.8),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment(0.0, 0.6),
+                ),
+              ),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: screenHeight - 56),
+                child: Padding(
+                  padding: const EdgeInsets.all(25),
+                  child: _pageForModule(selected),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _thinScreenView() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: screenWidth, minWidth: 0),
+
+      child: Row(
+        children: [
+          NavigationRail(
+            backgroundColor: Theme.of(context).colorScheme.secondary,
+            extended: false,
             labelType: NavigationRailLabelType.all,
             selectedIndex: AppModule.values.indexOf(selected),
             onDestinationSelected: (index) {
@@ -128,21 +208,34 @@ class _AppShellPageState extends State<AppShellPage> {
                     label: Text(module.label),
                   ),
                 )
-                .toList(),  
+                .toList(),
           ),
 
-          Expanded(
+          SingleChildScrollView(
+            scrollDirection: Axis.vertical,
             child: Container(
+              width: screenWidth - 80,
+
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [/*Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)*/ Color(0xFF7ca8f9), Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.8)],
+                  colors: [
+                    /*Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)*/ Color(
+                      0xFF7ca8f9,
+                    ),
+                    Theme.of(
+                      context,
+                    ).colorScheme.tertiary.withValues(alpha: 0.8),
+                  ],
                   begin: Alignment.topCenter,
                   end: Alignment(0.0, 0.6),
                 ),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(25),
-                child: _pageForModule(selected),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: screenHeight),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: _pageForModule(selected),
+                ),
               ),
             ),
           ),

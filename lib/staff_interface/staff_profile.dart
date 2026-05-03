@@ -29,7 +29,7 @@ class _StaffProfileState extends State<StaffProfile> {
   final TextEditingController _shopBranchController = TextEditingController(text: 'Main Branch');
   
   DateTime _currentMonth = DateTime(2026, 4, 1);
-  Map<String, Map<String, String>> _attendanceData = {};
+  final Map<String, Map<String, String>> _attendanceData = {};
   DateTime? _photoDate;
 
   Future<DateTime?> _extractDateFromPhoto(Uint8List imageBytes) async {
@@ -84,14 +84,20 @@ class _StaffProfileState extends State<StaffProfile> {
           _photoDate = null;
           if (kIsWeb) {
             setState(() {
-              if (isVerificationPhoto) _verificationPhotoBytes = bytes;
-              else _followUpPhotoBytes = bytes;
+              if (isVerificationPhoto) {
+                _verificationPhotoBytes = bytes;
+              } else {
+                _followUpPhotoBytes = bytes;
+              }
             });
           } else {
             final file = File(pickedFile.path);
             setState(() {
-              if (isVerificationPhoto) _verificationPhoto = file;
-              else _followUpPhoto = file;
+              if (isVerificationPhoto) {
+                _verificationPhoto = file;
+              } else {
+                _followUpPhoto = file;
+              }
             });
           }
         }
@@ -122,7 +128,7 @@ class _StaffProfileState extends State<StaffProfile> {
               ),
               const SizedBox(height: 15),
               DropdownButtonFormField<String>(
-                value: _employeeTypeController.text,
+                initialValue: _employeeTypeController.text,
                 decoration: const InputDecoration(
                   labelText: 'Employee Type',
                   border: OutlineInputBorder(),
@@ -544,7 +550,7 @@ class _StaffProfileState extends State<StaffProfile> {
                     const Text("Type of Entry", style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14, color: Color(0xFF1A237E))),
                     const SizedBox(height: 10),
                     DropdownButtonFormField(
-                      value: _typeController.text.isNotEmpty ? _typeController.text : null,
+                      initialValue: _typeController.text.isNotEmpty ? _typeController.text : null,
                       items: ["Nozzle", "Pad Lock", "Pocket Money"].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                       onChanged: (val) => _typeController.text = val ?? '',
                       decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), hintText: 'Select type', filled: true, fillColor: Colors.white.withOpacity(0.8)),

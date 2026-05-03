@@ -21,7 +21,7 @@ class Cam2PrintApp extends StatelessWidget {
           brightness: Brightness.light,
           primary: const Color(0xff101540),
           onPrimary: const Color(0xffffffff),
-          secondary: const Color.fromARGB(223, 46, 72, 145),
+          secondary: const Color(0xff2e4891),
           onSecondary: const Color(0xA6ffffff),
           error: const Color(0xffff0000),
           onError: const Color(0xA6000000),
