@@ -65,6 +65,11 @@ num SalaryComputed = 0;
 num BasicPay = 0;
 num TotalDeductions = 0;
 String NRemindersValue = NRemindersController.text;
+
+
+//change this to switch Views, prolly need to be defined in the database
+bool isAdmin = false;
+bool isFullTime = false;
 // End of Values
 
 //DropDownValues
@@ -563,7 +568,12 @@ class _SalaryPageState extends State<SalaryPage>
   @override
   void initState() {
     selectedStaff = SelectedStaff.name1;
-    staffBoolean = IsFullTimeStaff.no;
+    if (isFullTime == true) {
+      staffBoolean = IsFullTimeStaff.yes;
+    } else {
+      staffBoolean = IsFullTimeStaff.no;
+    }
+    ;
     resetTextFields();
     tabController = TabController(initialIndex: 0, length: 2, vsync: this);
     // Pag nag-update yung textfield, iuupdate rin yung value
@@ -1933,6 +1943,978 @@ class _SalaryPageState extends State<SalaryPage>
     );
   }
 
+  Widget _ROCalculationSection(BuildContext context) {
+    final ScrollController _scrollController = ScrollController();
+    return Card(
+      color: Theme.of(context).colorScheme.secondary,
+      child: LayoutBuilder(
+        builder: (context, BoxConstraints constraints) {
+          if (constraints.maxWidth > 900) {
+            return Padding(
+              padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16.0),
+              child: Column(
+                children: [
+                  FittedBox(
+                    alignment: Alignment.center,
+                    fit: BoxFit.fitWidth,
+                    child: Text('Earnings', style: TextStyle(fontSize: 32)),
+                  ),
+                  Divider(
+                    height: 2,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  ),
+                  SizedBox(height: 16),
+                  Row(
+                    spacing: 8,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Wrap(
+                              children: [
+                                Column(
+                                  children: [
+                                    Container(
+                                      alignment: Alignment.topLeft,
+                                      child: Text(
+                                        'Total Sales for Printing',
+                                        textAlign: TextAlign.left,
+                                        style: TextStyle(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimary,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          flex: 5,
+                                          child: Text(
+                                            "₱ " +
+                                                TSPrintValue.toStringAsFixed(2),
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.displaySmall,
+                                          ),
+                                        ),
+
+                                        Text(
+                                          TSPrintPercentageValue.toString() +
+                                              "%",
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.displaySmall,
+                                        ),
+                                      ],
+                                    ),
+
+                                    SizedBox(height: 16),
+                                  ],
+                                ),
+
+                                Column(
+                                  children: [
+                                    Container(
+                                      alignment: Alignment.topLeft,
+                                      child: Text(
+                                        'Total Sales for Photocopy/Xerox',
+                                        textAlign: TextAlign.left,
+                                        style: TextStyle(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimary,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          flex: 5,
+                                          child: Text(
+                                            "₱ " +
+                                                TSXeroxValue.toStringAsFixed(2),
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.displaySmall,
+                                          ),
+                                        ),
+
+                                        Text(
+                                          TSPrintPercentageValue.toString() +
+                                              "%",
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.displaySmall,
+                                        ),
+                                      ],
+                                    ),
+
+                                    SizedBox(height: 16),
+                                  ],
+                                ),
+
+                                Column(
+                                  children: [
+                                    Container(
+                                      alignment: Alignment.topLeft,
+                                      child: Text(
+                                        'Total Sales for School Supplies',
+                                        textAlign: TextAlign.left,
+                                        style: TextStyle(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimary,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          flex: 5,
+                                          child: Text(
+                                            "₱ " +
+                                                TSSuppliesValue.toStringAsFixed(
+                                                  2,
+                                                ),
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.displaySmall,
+                                          ),
+                                        ),
+
+                                        Text(
+                                          TSSuppliesPercentageValue.toString() +
+                                              "%",
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.displaySmall,
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 16),
+                                  ],
+                                ),
+                                Column(
+                                  children: [
+                                    Container(
+                                      alignment: Alignment.topLeft,
+                                      child: Text(
+                                        'Total Sales for Party Needs',
+                                        textAlign: TextAlign.left,
+                                        style: TextStyle(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimary,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          flex: 5,
+                                          child: Text(
+                                            "₱ " +
+                                                TSPartyValue.toStringAsFixed(2),
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.displaySmall,
+                                          ),
+                                        ),
+
+                                        Text(
+                                          TSPartyPercentageValue.toString() +
+                                              "%",
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.displaySmall,
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 16),
+                                  ],
+                                ),
+                                Column(
+                                  children: [
+                                    Container(
+                                      alignment: Alignment.topLeft,
+                                      child: Text(
+                                        'Commission Amount',
+                                        textAlign: TextAlign.left,
+                                        style: TextStyle(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimary,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Container(
+                                      width: double.infinity,
+                                      child: Text(
+                                        "₱ " + CAmountValue.toStringAsFixed(2),
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.displaySmall,
+                                        textAlign: TextAlign.left,
+                                      ),
+                                    ),
+
+                                    SizedBox(height: 16),
+                                  ],
+                                ),
+                                Column(
+                                  children: [
+                                    Container(
+                                      alignment: Alignment.topLeft,
+                                      child: Text(
+                                        'Deductions from Violations',
+                                        textAlign: TextAlign.left,
+                                        style: TextStyle(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimary,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Container(
+                                      width: double.infinity,
+                                      child: Text(
+                                        "₱ " +
+                                            DViolationsValue.toStringAsFixed(2),
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.displaySmall,
+                                        textAlign: TextAlign.left,
+                                      ),
+                                    ),
+                                    SizedBox(height: 16),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Wrap(
+                              children: [
+                                Column(
+                                  children: [
+                                    Container(
+                                      alignment: Alignment.topLeft,
+                                      child: Text(
+                                        'Deductions from PhilHealth',
+                                        textAlign: TextAlign.left,
+                                        style: TextStyle(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimary,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    if (staffBoolean == IsFullTimeStaff.yes)
+                                      Container(
+                                        width: double.infinity,
+                                        child: Text(
+                                          "₱ " +
+                                              DPhilHealthValue.toStringAsFixed(
+                                                2,
+                                              ),
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.displaySmall,
+                                          textAlign: TextAlign.left,
+                                        ),
+                                      ),
+                                    if (staffBoolean == IsFullTimeStaff.no)
+                                      Container(
+                                        width: double.infinity,
+                                        child: Text(
+                                          "N/A",
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.displaySmall,
+                                          textAlign: TextAlign.left,
+                                        ),
+                                      ),
+                                    SizedBox(height: 16),
+                                  ],
+                                ),
+                                Column(
+                                  children: [
+                                    Container(
+                                      alignment: Alignment.topLeft,
+                                      child: Text(
+                                        'Deductions from SSS',
+                                        textAlign: TextAlign.left,
+                                        style: TextStyle(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimary,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    if (staffBoolean == IsFullTimeStaff.yes)
+                                      Container(
+                                        width: double.infinity,
+                                        child: Text(
+                                          "₱ " + DSSSValue.toStringAsFixed(2),
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.displaySmall,
+                                          textAlign: TextAlign.left,
+                                        ),
+                                      ),
+                                    if (staffBoolean == IsFullTimeStaff.no)
+                                      Container(
+                                        width: double.infinity,
+                                        child: Text(
+                                          "N/A",
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.displaySmall,
+                                          textAlign: TextAlign.left,
+                                        ),
+                                      ),
+                                    SizedBox(height: 16),
+                                  ],
+                                ),
+                                Column(
+                                  children: [
+                                    Container(
+                                      alignment: Alignment.topLeft,
+                                      child: Text(
+                                        'Late Deduction',
+                                        textAlign: TextAlign.left,
+                                        style: TextStyle(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimary,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Container(
+                                      width: double.infinity,
+                                      child: Text(
+                                        "₱ " +
+                                            LDeductionValue.toStringAsFixed(2),
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.displaySmall,
+                                        textAlign: TextAlign.left,
+                                      ),
+                                    ),
+                                    SizedBox(height: 16),
+                                  ],
+                                ),
+
+                                Column(
+                                  children: [
+                                    Container(
+                                      alignment: Alignment.topLeft,
+                                      child: Text(
+                                        'Cash Advance',
+                                        textAlign: TextAlign.left,
+                                        style: TextStyle(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimary,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Container(
+                                      width: double.infinity,
+                                      child: Text(
+                                        "₱ " + CAdvanceValue.toStringAsFixed(2),
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.displaySmall,
+                                        textAlign: TextAlign.left,
+                                      ),
+                                    ),
+                                    SizedBox(height: 16),
+                                  ],
+                                ),
+                                Column(
+                                  children: [
+                                    Container(
+                                      alignment: Alignment.topLeft,
+                                      child: Text(
+                                        'Notes and Reminders',
+                                        textAlign: TextAlign.left,
+                                        style: TextStyle(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimary,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    if (NRemindersValue == "")
+                                      (Container(
+                                        width: double.infinity,
+                                        child: Text(
+                                          "No notes.",
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.displaySmall,
+                                          textAlign: TextAlign.left,
+                                        ),
+                                      ))
+                                    else
+                                      (Container(
+                                        width: double.infinity,
+                                        child: Text(
+                                          NRemindersValue,
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.displaySmall,
+                                          textAlign: TextAlign.left,
+                                        ),
+                                      )),
+                                    SizedBox(height: 16),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          } else {
+            return SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16.0),
+                child: Column(
+                  children: [
+                    FittedBox(
+                      alignment: Alignment.center,
+                      fit: BoxFit.fitWidth,
+                      child: Text('Earnings', style: TextStyle(fontSize: 36)),
+                    ),
+                    Divider(
+                      height: 2,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
+                    SizedBox(height: 16),
+                    ListView(
+                      shrinkWrap: true,
+                      physics: ClampingScrollPhysics(),
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                children: [
+                                  Wrap(
+                                    children: [
+                                      Column(
+                                        children: [
+                                          Container(
+                                            alignment: Alignment.topLeft,
+                                            child: Text(
+                                              'Total Sales for Printing',
+                                              textAlign: TextAlign.left,
+                                              style: TextStyle(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onPrimary,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                flex: 5,
+                                                child: Text(
+                                                  "₱ " +
+                                                      TSPrintValue.toStringAsFixed(
+                                                        2,
+                                                      ),
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .displaySmall
+                                                      ?.copyWith(fontSize: 24),
+                                                ),
+                                              ),
+
+                                              Text(
+                                                TSPrintPercentageValue.toString() +
+                                                    "%",
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .displaySmall
+                                                    ?.copyWith(fontSize: 24),
+                                              ),
+                                            ],
+                                          ),
+
+                                          SizedBox(height: 16),
+                                        ],
+                                      ),
+
+                                      Column(
+                                        children: [
+                                          Container(
+                                            alignment: Alignment.topLeft,
+                                            child: Text(
+                                              'Total Sales for Photocopy/Xerox',
+                                              textAlign: TextAlign.left,
+                                              style: TextStyle(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onPrimary,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                flex: 5,
+                                                child: Text(
+                                                  "₱ " +
+                                                      TSXeroxValue.toStringAsFixed(
+                                                        2,
+                                                      ),
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .displaySmall
+                                                      ?.copyWith(fontSize: 24),
+                                                ),
+                                              ),
+
+                                              Text(
+                                                TSPrintPercentageValue.toString() +
+                                                    "%",
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .displaySmall
+                                                    ?.copyWith(fontSize: 24),
+                                              ),
+                                            ],
+                                          ),
+
+                                          SizedBox(height: 16),
+                                        ],
+                                      ),
+                                      Column(
+                                        children: [
+                                          Container(
+                                            alignment: Alignment.topLeft,
+                                            child: Text(
+                                              'Total Sales for School Supplies',
+                                              textAlign: TextAlign.left,
+                                              style: TextStyle(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onPrimary,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                flex: 5,
+                                                child: Text(
+                                                  "₱ " +
+                                                      TSSuppliesValue.toStringAsFixed(
+                                                        2,
+                                                      ),
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .displaySmall
+                                                      ?.copyWith(fontSize: 24),
+                                                ),
+                                              ),
+
+                                              Text(
+                                                TSSuppliesPercentageValue.toString() +
+                                                    "%",
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .displaySmall
+                                                    ?.copyWith(fontSize: 24),
+                                              ),
+                                            ],
+                                          ),
+                                          SizedBox(height: 16),
+                                        ],
+                                      ),
+                                      Column(
+                                        children: [
+                                          Container(
+                                            alignment: Alignment.topLeft,
+                                            child: Text(
+                                              'Total Sales for Party Needs',
+                                              textAlign: TextAlign.left,
+                                              style: TextStyle(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onPrimary,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                flex: 5,
+                                                child: Text(
+                                                  "₱ " +
+                                                      TSPartyValue.toStringAsFixed(
+                                                        2,
+                                                      ),
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .displaySmall
+                                                      ?.copyWith(fontSize: 24),
+                                                ),
+                                              ),
+
+                                              Text(
+                                                TSPartyPercentageValue.toString() +
+                                                    "%",
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .displaySmall
+                                                    ?.copyWith(fontSize: 24),
+                                              ),
+                                            ],
+                                          ),
+                                          SizedBox(height: 16),
+                                        ],
+                                      ),
+                                      Column(
+                                        children: [
+                                          Container(
+                                            alignment: Alignment.topLeft,
+                                            child: Text(
+                                              'Commission Amount',
+                                              textAlign: TextAlign.left,
+                                              style: TextStyle(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onPrimary,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(height: 4),
+                                          Container(
+                                            width: double.infinity,
+                                            child: Text(
+                                              "₱ " +
+                                                  CAmountValue.toStringAsFixed(
+                                                    2,
+                                                  ),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .displaySmall
+                                                  ?.copyWith(fontSize: 24),
+                                              textAlign: TextAlign.left,
+                                            ),
+                                          ),
+
+                                          SizedBox(height: 16),
+                                        ],
+                                      ),
+                                      Column(
+                                        children: [
+                                          Container(
+                                            alignment: Alignment.topLeft,
+                                            child: Text(
+                                              'Deductions from Violations',
+                                              textAlign: TextAlign.left,
+                                              style: TextStyle(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onPrimary,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(height: 4),
+                                          Container(
+                                            width: double.infinity,
+                                            child: Text(
+                                              "₱ " +
+                                                  DViolationsValue.toStringAsFixed(
+                                                    2,
+                                                  ),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .displaySmall
+                                                  ?.copyWith(fontSize: 24),
+                                              textAlign: TextAlign.left,
+                                            ),
+                                          ),
+                                          SizedBox(height: 16),
+                                        ],
+                                      ),
+                                      Column(
+                                        children: [
+                                          Container(
+                                            alignment: Alignment.topLeft,
+                                            child: Text(
+                                              'Deductions from PhilHealth',
+                                              textAlign: TextAlign.left,
+                                              style: TextStyle(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onPrimary,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(height: 4),
+                                          if (staffBoolean ==
+                                              IsFullTimeStaff.yes)
+                                            Container(
+                                              width: double.infinity,
+                                              child: Text(
+                                                "₱ " +
+                                                    DPhilHealthValue.toStringAsFixed(
+                                                      2,
+                                                    ),
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .displaySmall
+                                                    ?.copyWith(fontSize: 24),
+                                                textAlign: TextAlign.left,
+                                              ),
+                                            ),
+                                          if (staffBoolean ==
+                                              IsFullTimeStaff.no)
+                                            Container(
+                                              width: double.infinity,
+                                              child: Text(
+                                                "N/A",
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .displaySmall
+                                                    ?.copyWith(fontSize: 24),
+                                                textAlign: TextAlign.left,
+                                              ),
+                                            ),
+                                          SizedBox(height: 16),
+                                        ],
+                                      ),
+                                      Column(
+                                        children: [
+                                          Container(
+                                            alignment: Alignment.topLeft,
+                                            child: Text(
+                                              'Deductions from SSS',
+                                              textAlign: TextAlign.left,
+                                              style: TextStyle(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onPrimary,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(height: 4),
+                                          if (staffBoolean ==
+                                              IsFullTimeStaff.yes)
+                                            Container(
+                                              width: double.infinity,
+                                              child: Text(
+                                                "₱ " +
+                                                    DSSSValue.toStringAsFixed(
+                                                      2,
+                                                    ),
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .displaySmall
+                                                    ?.copyWith(fontSize: 24),
+                                                textAlign: TextAlign.left,
+                                              ),
+                                            ),
+                                          if (staffBoolean ==
+                                              IsFullTimeStaff.no)
+                                            Container(
+                                              width: double.infinity,
+                                              child: Text(
+                                                "N/A",
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .displaySmall
+                                                    ?.copyWith(fontSize: 24),
+                                                textAlign: TextAlign.left,
+                                              ),
+                                            ),
+                                          SizedBox(height: 16),
+                                        ],
+                                      ),
+                                      Column(
+                                        children: [
+                                          Container(
+                                            alignment: Alignment.topLeft,
+                                            child: Text(
+                                              'Late Deduction',
+                                              textAlign: TextAlign.left,
+                                              style: TextStyle(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onPrimary,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(height: 4),
+                                          Container(
+                                            width: double.infinity,
+                                            child: Text(
+                                              "₱ " +
+                                                  LDeductionValue.toStringAsFixed(
+                                                    2,
+                                                  ),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .displaySmall
+                                                  ?.copyWith(fontSize: 24),
+                                              textAlign: TextAlign.left,
+                                            ),
+                                          ),
+                                          SizedBox(height: 16),
+                                        ],
+                                      ),
+
+                                      Column(
+                                        children: [
+                                          Container(
+                                            alignment: Alignment.topLeft,
+                                            child: Text(
+                                              'Cash Advance',
+                                              textAlign: TextAlign.left,
+                                              style: TextStyle(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onPrimary,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(height: 4),
+                                          Container(
+                                            width: double.infinity,
+                                            child: Text(
+                                              "₱ " +
+                                                  CAdvanceValue.toStringAsFixed(
+                                                    2,
+                                                  ),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .displaySmall
+                                                  ?.copyWith(fontSize: 24),
+                                              textAlign: TextAlign.left,
+                                            ),
+                                          ),
+                                          SizedBox(height: 16),
+                                        ],
+                                      ),
+                                      Column(
+                                        children: [
+                                          Container(
+                                            alignment: Alignment.topLeft,
+                                            child: Text(
+                                              'Notes and Reminders',
+                                              textAlign: TextAlign.left,
+                                              style: TextStyle(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onPrimary,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(height: 4),
+                                          if (NRemindersValue == "")
+                                            (Container(
+                                              width: double.infinity,
+                                              child: Text(
+                                                "No notes.",
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .displaySmall
+                                                    ?.copyWith(fontSize: 24),
+                                                textAlign: TextAlign.left,
+                                              ),
+                                            ))
+                                          else
+                                            (Container(
+                                              width: double.infinity,
+                                              child: Text(
+                                                NRemindersValue,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .displaySmall
+                                                    ?.copyWith(fontSize: 24),
+                                                textAlign: TextAlign.left,
+                                              ),
+                                            )),
+                                          SizedBox(height: 16),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+        },
+      ),
+    );
+  }
+
   //Staff Section
   Widget _StaffSection(BuildContext context) {
     return Card(
@@ -2050,6 +3032,79 @@ class _SalaryPageState extends State<SalaryPage>
                       ),
                       const SizedBox(width: 16),
                     ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _ROStaffSection(BuildContext context) {
+    return Card(
+      color: Theme.of(context).colorScheme.secondary,
+      child: Padding(
+        padding: EdgeInsetsGeometry.symmetric(horizontal: 12, vertical: 24),
+        child: Row(
+          children: [
+            SizedBox(width: 24),
+            Expanded(
+              flex: 1,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  IntrinsicHeight(
+                    child: Row(
+                      children: [
+                        Icon(
+                          size: 96,
+                          Icons.account_circle,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Wrap(
+                            children: [
+                              Expanded(
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    selectedStaff!.label,
+                                    style: TextStyle(
+                                      fontSize: 32,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onPrimary,
+                                    ),
+                                    textAlign: TextAlign.left,
+                                  ),
+                                ),
+                              ),
+
+                              Expanded(
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    staffBoolean!.label,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onPrimary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        SizedBox(width: 12),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -2482,8 +3537,14 @@ class _SalaryPageState extends State<SalaryPage>
                         child: Column(
                           spacing: 12,
                           children: [
-                            _StaffSection(context),
-                            Expanded(child: _CalculationSection(context)),
+                            if (isAdmin == true)
+                              (_StaffSection(context))
+                            else
+                              _ROStaffSection(context),
+                            if (isAdmin == true)
+                              (Expanded(child: _CalculationSection(context)))
+                            else
+                              (Expanded(child: _ROCalculationSection(context))),
                           ],
                         ),
                       ),
@@ -2579,13 +3640,23 @@ class _SalaryPageState extends State<SalaryPage>
                           children: <Widget>[
                             Column(
                               children: [
-                                _StaffSection(context),
+                                if (isAdmin == true)
+                                  (_StaffSection(context))
+                                else
+                                  _ROStaffSection(context),
                                 _SalarySection(context),
                               ],
                             ),
                             Column(
                               children: [
-                                Expanded(child: _CalculationSection(context)),
+                                if (isAdmin == true)
+                                  (Expanded(
+                                    child: _CalculationSection(context),
+                                  ))
+                                else
+                                  (Expanded(
+                                    child: _ROCalculationSection(context),
+                                  )),
                               ],
                             ),
                           ],

@@ -63,7 +63,9 @@ class Cam2PrintApp extends StatelessWidget {
             fontSize: 36,
             fontStyle: FontStyle.italic,
           ),
-          displaySmall: GoogleFonts.courierPrime(),
+          displaySmall: GoogleFonts.courierPrime(
+            fontSize: 32
+          ),
         ),
       ),
 
