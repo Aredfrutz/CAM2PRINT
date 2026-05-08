@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/app/app_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 
 class AdminSchedule extends StatefulWidget {
@@ -739,7 +738,7 @@ class _AdminScheduleState extends State<AdminSchedule> {
                   const SizedBox(height: 20),
                   Text(
                     selectedBranch != null
-                        ? '${selectedBranch} BRANCH'
+                        ? '$selectedBranch BRANCH'
                         : 'ASSIGN STAFF',
                     style: const TextStyle(
                         fontSize: 16,

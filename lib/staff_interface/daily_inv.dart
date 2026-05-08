@@ -209,6 +209,7 @@ Future<void> _saveAndReset() async {
       setState(() {
         _isLoading = false;
         _isEditingInventory = false;
+        _currentTab = 'inventory';
       });
       // Refresh data to show the latest values from the server
       _fetchInventoryFromSupabase(); 

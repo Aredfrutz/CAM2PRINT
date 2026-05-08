@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/app/app_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 
 class ReportsAdminPage extends StatefulWidget {
@@ -12,6 +11,20 @@ class ReportsAdminPage extends StatefulWidget {
 
 class _ReportsAdminPageState extends State<ReportsAdminPage> {
   String _selectedTab = "Attendance";
+  String _filterShopBranch = "All Branches";
+  String _filterEmployeeStatus = "All";
+  String _filterItemCategory = "All";
+  String _filterShift = "Opening/Closing";
+  String _filterStaffName = "All Staff";
+  String _filterServiceType = "All";
+  String _filterServiceStatus = "All";
+  String _filterInventoryStatus = "All";
+  String _filterLogActionType = "All";
+  DateTime? _filterStartDate;
+  DateTime? _filterEndDate;
+  final TextEditingController _thresholdController = TextEditingController(
+    text: "0",
+  );
 
  void _navigateTo(String pageName) {
     String? routeName;
@@ -658,8 +671,9 @@ class _ReportsAdminPageState extends State<ReportsAdminPage> {
   void _showFilterDialog() {
     showDialog(
       context: context,
-      builder: (context) {
-        return Dialog(
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) => Dialog(
           backgroundColor: Colors.transparent,
           insetPadding: const EdgeInsets.all(20),
           child: Container(
@@ -670,7 +684,7 @@ class _ReportsAdminPageState extends State<ReportsAdminPage> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 10,
                   offset: const Offset(0, 5),
                 ),
@@ -696,11 +710,13 @@ class _ReportsAdminPageState extends State<ReportsAdminPage> {
                     child: Column(
                       children: [
                         // Shop Branch
-                        _buildDropdownField("Shop Branch", [
-                          "All Branches",
-                          "Campo",
-                          "Main",
-                        ]),
+                        _buildDropdownField(
+                          "Shop Branch",
+                          ["All Branches", "Campo", "Main"],
+                          _filterShopBranch,
+                          (value) =>
+                              setDialogState(() => _filterShopBranch = value!),
+                        ),
                         const SizedBox(height: 16),
 
                         // Pay Period / Date Range & Employee Status
@@ -722,11 +738,25 @@ class _ReportsAdminPageState extends State<ReportsAdminPage> {
                                   const SizedBox(height: 5),
                                   Row(
                                     children: [
-                                      Expanded(child: _buildDatePicker()),
+                                      Expanded(
+                                        child: _buildDatePicker(
+                                          _filterStartDate,
+                                          (picked) => setDialogState(
+                                            () => _filterStartDate = picked,
+                                          ),
+                                        ),
+                                      ),
                                       const SizedBox(width: 8),
                                       const Text("-"),
                                       const SizedBox(width: 8),
-                                      Expanded(child: _buildDatePicker()),
+                                      Expanded(
+                                        child: _buildDatePicker(
+                                          _filterEndDate,
+                                          (picked) => setDialogState(
+                                            () => _filterEndDate = picked,
+                                          ),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ],
@@ -734,11 +764,14 @@ class _ReportsAdminPageState extends State<ReportsAdminPage> {
                             ),
                             const SizedBox(width: 16),
                             Expanded(
-                              child: _buildDropdownField("Employee Status", [
-                                "Active",
-                                "Inactive",
-                                "All",
-                              ]),
+                              child: _buildDropdownField(
+                                "Employee Status",
+                                ["All", "Active", "Inactive"],
+                                _filterEmployeeStatus,
+                                (value) => setDialogState(
+                                  () => _filterEmployeeStatus = value!,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -748,19 +781,24 @@ class _ReportsAdminPageState extends State<ReportsAdminPage> {
                         Row(
                           children: [
                             Expanded(
-                              child: _buildDropdownField("Item Category", [
-                                "All",
-                                "Packages",
-                                "Souvenirs",
-                              ]),
+                              child: _buildDropdownField(
+                                "Item Category",
+                                ["All", "Packages", "Souvenirs"],
+                                _filterItemCategory,
+                                (value) => setDialogState(
+                                  () => _filterItemCategory = value!,
+                                ),
+                              ),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
-                              child: _buildDropdownField("Shift", [
-                                "Opening/Closing",
-                                "Morning",
-                                "Afternoon",
-                              ]),
+                              child: _buildDropdownField(
+                                "Shift",
+                                ["Opening/Closing", "Morning", "Afternoon"],
+                                _filterShift,
+                                (value) =>
+                                    setDialogState(() => _filterShift = value!),
+                              ),
                             ),
                           ],
                         ),
@@ -770,18 +808,25 @@ class _ReportsAdminPageState extends State<ReportsAdminPage> {
                         Row(
                           children: [
                             Expanded(
-                              child: _buildDropdownField("Staff Name", [
-                                "All Staff",
-                                "Jane Admin",
-                              ]),
+                              child: _buildDropdownField(
+                                "Staff Name",
+                                ["All Staff", "Jane Admin"],
+                                _filterStaffName,
+                                (value) => setDialogState(
+                                  () => _filterStaffName = value!,
+                                ),
+                              ),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
-                              child: _buildDropdownField("Service Type", [
-                                "All",
-                                "Printing",
-                                "Custom",
-                              ]),
+                              child: _buildDropdownField(
+                                "Service Type",
+                                ["All", "Printing", "Custom"],
+                                _filterServiceType,
+                                (value) => setDialogState(
+                                  () => _filterServiceType = value!,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -803,32 +848,38 @@ class _ReportsAdminPageState extends State<ReportsAdminPage> {
                                     ),
                                   ),
                                   const SizedBox(height: 5),
-                                  Container(
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFB0B8D0),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                    ),
-                                    child: const Center(
-                                      child: Text(
-                                        "0",
-                                        style: TextStyle(color: Colors.white),
+                                  TextField(
+                                    controller: _thresholdController,
+                                    keyboardType: TextInputType.number,
+                                    decoration: InputDecoration(
+                                      filled: true,
+                                      fillColor: const Color(0xFFB0B8D0),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(6),
+                                        borderSide: BorderSide.none,
                                       ),
-                                    ), // Placeholder
+                                      isDense: true,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 12,
+                                          ),
+                                    ),
+                                    style: const TextStyle(color: Colors.white),
                                   ),
                                 ],
                               ),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
-                              child: _buildDropdownField("Service Status", [
-                                "All",
-                                "Completed",
-                                "Pending",
-                              ]),
+                              child: _buildDropdownField(
+                                "Service Status",
+                                ["All", "Completed", "Pending"],
+                                _filterServiceStatus,
+                                (value) => setDialogState(
+                                  () => _filterServiceStatus = value!,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -838,17 +889,24 @@ class _ReportsAdminPageState extends State<ReportsAdminPage> {
                         Row(
                           children: [
                             Expanded(
-                              child: _buildDropdownField("Inventory Status", [
-                                "All",
-                                "Low Stock",
-                                "In Stock",
-                              ]),
+                              child: _buildDropdownField(
+                                "Inventory Status",
+                                ["All", "Low Stock", "In Stock"],
+                                _filterInventoryStatus,
+                                (value) => setDialogState(
+                                  () => _filterInventoryStatus = value!,
+                                ),
+                              ),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
                               child: _buildDropdownField(
                                 "Log Activity Action Type",
                                 ["All", "Login", "Transaction"],
+                                _filterLogActionType,
+                                (value) => setDialogState(
+                                  () => _filterLogActionType = value!,
+                                ),
                               ),
                             ),
                           ],
@@ -864,7 +922,7 @@ class _ReportsAdminPageState extends State<ReportsAdminPage> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () => Navigator.pop(dialogContext),
                       child: const Text(
                         "Cancel",
                         style: TextStyle(color: Colors.grey),
@@ -874,7 +932,7 @@ class _ReportsAdminPageState extends State<ReportsAdminPage> {
                     ElevatedButton(
                       onPressed: () {
                         // Add filter logic here
-                        Navigator.pop(context);
+                        Navigator.pop(dialogContext);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(
@@ -898,13 +956,18 @@ class _ReportsAdminPageState extends State<ReportsAdminPage> {
               ],
             ),
           ),
-        );
+        ));
       },
     );
   }
 
   // Helper widget for Dropdowns
-  Widget _buildDropdownField(String label, List<String> items) {
+  Widget _buildDropdownField(
+    String label,
+    List<String> items,
+    String selectedValue,
+    ValueChanged<String?> onChanged,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -920,38 +983,75 @@ class _ReportsAdminPageState extends State<ReportsAdminPage> {
         Container(
           height: 40,
           decoration: BoxDecoration(
-            color: const Color(0xFFB0B8D0), // Blue-grey box
+            color: const Color(0xFFB0B8D0),
             borderRadius: BorderRadius.circular(6),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                items[0],
-                style: const TextStyle(color: Colors.white),
-              ), // Show first item
-              const Icon(Icons.arrow_drop_down, color: Colors.white),
-            ],
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: selectedValue,
+              isExpanded: true,
+              icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+              dropdownColor: const Color(0xFF8E99BC),
+              style: const TextStyle(color: Colors.white),
+              items: items
+                  .map(
+                    (item) => DropdownMenuItem<String>(
+                      value: item,
+                      child: Text(item),
+                    ),
+                  )
+                  .toList(),
+              onChanged: onChanged,
+            ),
           ),
         ),
       ],
     );
   }
 
-  // Helper widget for Date Picker simulation
-  Widget _buildDatePicker() {
-    return Container(
+  Widget _buildDatePicker(
+    DateTime? date,
+    ValueChanged<DateTime> onDatePicked,
+  ) {
+    return InkWell(
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: date ?? DateTime.now(),
+          firstDate: DateTime(2020),
+          lastDate: DateTime(2100),
+        );
+        if (picked != null) {
+          onDatePicked(picked);
+        }
+      },
+      child: Container(
       height: 40,
       decoration: BoxDecoration(
         color: const Color(0xFFB0B8D0),
         borderRadius: BorderRadius.circular(6),
       ),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Row(
-        children: const [
-          Icon(Icons.calendar_today, size: 16, color: Colors.white),
+        children: [
+          const Icon(Icons.calendar_today, size: 16, color: Colors.white),
+          const SizedBox(width: 8),
+          Text(
+            date == null
+                ? "Select date"
+                : "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}",
+            style: const TextStyle(color: Colors.white, fontSize: 12),
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
-    );
+    ));
+  }
+
+  @override
+  void dispose() {
+    _thresholdController.dispose();
+    super.dispose();
   }
 }

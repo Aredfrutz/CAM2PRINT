@@ -12,6 +12,7 @@ class ConsumptionTracker extends StatefulWidget {
 
 class _ConsumptionTrackerState extends State<ConsumptionTracker> {
   String _activeCategory = 'Printing';
+  bool _isSaving = false;
 
   // State for the "Current Order" list
   List<Map<String, dynamic>> currentOrders = [
@@ -58,6 +59,91 @@ class _ConsumptionTrackerState extends State<ConsumptionTracker> {
     setState(() {
       currentOrders.clear();
     });
+  }
+
+  Future<void> _saveAndFinish() async {
+    if (_isSaving || currentOrders.isEmpty) return;
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      setState(() => _isSaving = true);
+      final profile = await Supabase.instance.client
+          .from('profiles')
+          .select('assigned_branch, full_name')
+          .eq('id', user.id)
+          .single();
+
+      final branch = (profile['assigned_branch'] ?? '').toString();
+      final fullName = (profile['full_name'] ?? 'Staff').toString();
+      final missingItems = <String>[];
+
+      for (final order in currentOrders) {
+        final itemName = (order['name'] ?? '').toString().trim();
+        final consumedQty = (order['count'] ?? 0) as int;
+        if (itemName.isEmpty || consumedQty <= 0) continue;
+
+        final rows = await Supabase.instance.client
+            .from('inventory')
+            .select('id, pieces')
+            .eq('item_name', itemName)
+            .eq('branch_name', branch)
+            .limit(1);
+
+        if (rows.isEmpty) {
+          missingItems.add(itemName);
+          continue;
+        }
+
+        final inventory = Map<String, dynamic>.from(rows.first);
+        final currentPieces =
+            int.tryParse((inventory['pieces'] ?? 0).toString()) ?? 0;
+        final newPieces = (currentPieces - consumedQty).clamp(0, 999999999);
+
+        await Supabase.instance.client
+            .from('inventory')
+            .update({'pieces': newPieces, 'last_updated_by': fullName})
+            .eq('id', inventory['id'].toString());
+
+        await Supabase.instance.client.from('consumption_logs').insert({
+          'staff_id': user.id,
+          'staff_name': fullName,
+          'branch_name': branch,
+          'item_name': itemName,
+          'quantity_consumed': consumedQty,
+          'category': _activeCategory,
+          // created_at intentionally omitted to use DB default
+        });
+      }
+
+      if (!mounted) return;
+      setState(() {
+        currentOrders.clear();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: missingItems.isEmpty ? Colors.green : Colors.orange,
+          content: Text(
+            missingItems.isEmpty
+                ? 'Consumption saved and inventory updated.'
+                : 'Saved with warnings. Missing in inventory: ${missingItems.join(', ')}',
+          ),
+        ),
+      );
+
+      Navigator.pushReplacementNamed(context, AppRouter.staffDailyInv);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save consumption: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   void _navigateTo(String pageName) {
@@ -388,7 +474,7 @@ class _ConsumptionTrackerState extends State<ConsumptionTracker> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                  "${_activeCategory} Orders",
+                                  "$_activeCategory Orders",
                                   style: const TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,
@@ -528,15 +614,27 @@ class _ConsumptionTrackerState extends State<ConsumptionTracker> {
                                                   BorderRadius.circular(10),
                                             ),
                                           ),
-                                          onPressed: () {},
-                                          child: const Text(
-                                            "Save and Finish",
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                            ),
-                                          ),
+                                          onPressed: _isSaving
+                                              ? null
+                                              : _saveAndFinish,
+                                          child: _isSaving
+                                              ? const SizedBox(
+                                                  width: 20,
+                                                  height: 20,
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    color: Colors.white,
+                                                  ),
+                                                )
+                                              : const Text(
+                                                  "Save and Finish",
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 16,
+                                                  ),
+                                                ),
                                         ),
                                       ),
                                     ),
@@ -573,7 +671,7 @@ class _ConsumptionTrackerState extends State<ConsumptionTracker> {
           boxShadow: isActive
               ? [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 5,
                     offset: const Offset(0, 2),
                   ),

@@ -12,11 +12,6 @@ class StaffManagementPage extends StatefulWidget {
 class _StaffManagementPageState extends State<StaffManagementPage> {
   // Sample data for the table
   // Replace the old staffList with this:
-final _staffStream = Supabase.instance.client
-    .from('profiles') // Make sure your table is named 'profiles'
-    .stream(primaryKey: ['id'])
-    .order('full_name');
-
 // 1. Toggle Active/Inactive Status
 Future<void> _toggleStaffStatus(String id, bool currentStatus) async {
   await Supabase.instance.client
@@ -447,30 +442,37 @@ Future<void> _deleteStaff(String id) async {
   }
 
   void _showAddStaffDialog() {
+    final nameController = TextEditingController();
+    final emailController = TextEditingController();
+    final passwordController = TextEditingController();
+    String? selectedEmploymentStatus;
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          child: Container(
-            width: 400,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: Container(
+                width: 400,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                   // Icon
                   Container(
                     width: 60,
@@ -506,23 +508,27 @@ Future<void> _deleteStaff(String id) async {
                   _buildFormField(
                     "STAFF NAME",
                     "Enter Full Name",
-                    TextEditingController(),
+                    nameController,
                   ),
                   const SizedBox(height: 16),
-                  _buildDropdownField("EMPLOYMENT STATUS", [
-                    "Select status",
-                    "Full-Time",
-                    "Part-Time",
-                    "Contractual",
-                  ]),
+                  _buildDropdownField(
+                    "EMPLOYMENT STATUS",
+                    const ["Full-Time", "Part-Time", "Contractual"],
+                    selectedEmploymentStatus,
+                    (value) {
+                      setDialogState(() {
+                        selectedEmploymentStatus = value;
+                      });
+                    },
+                  ),
                   const SizedBox(height: 16),
                   _buildFormField(
                     "EMAIL ADDRESS",
                     "email@cam2print.com",
-                    TextEditingController(),
+                    emailController,
                   ),
                   const SizedBox(height: 16),
-                  _buildPasswordField("PASSWORD"),
+                  _buildPasswordField("PASSWORD", passwordController),
                   const SizedBox(height: 24),
 
                   // Create Button
@@ -547,10 +553,12 @@ Future<void> _deleteStaff(String id) async {
                       ),
                     ),
                   ),
-                ],
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
@@ -600,7 +608,12 @@ Future<void> _deleteStaff(String id) async {
     );
   }
 
-  Widget _buildDropdownField(String label, List<String> items) {
+  Widget _buildDropdownField(
+    String label,
+    List<String> items,
+    String? selectedValue,
+    ValueChanged<String?> onChanged,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -622,17 +635,18 @@ Future<void> _deleteStaff(String id) async {
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               isExpanded: true,
-              hint: Text(
-                items[0],
-                style: const TextStyle(color: Color(0xFF9CA3AF)),
+              value: selectedValue,
+              hint: const Text(
+                "Select status",
+                style: TextStyle(color: Color(0xFF9CA3AF)),
               ),
-              items: items.skip(1).map((String value) {
+              items: items.map((String value) {
                 return DropdownMenuItem<String>(
                   value: value,
                   child: Text(value),
                 );
               }).toList(),
-              onChanged: (_) {},
+              onChanged: onChanged,
             ),
           ),
         ),
@@ -640,7 +654,7 @@ Future<void> _deleteStaff(String id) async {
     );
   }
 
-  Widget _buildPasswordField(String label) {
+  Widget _buildPasswordField(String label, TextEditingController controller) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -654,6 +668,7 @@ Future<void> _deleteStaff(String id) async {
         ),
         const SizedBox(height: 6),
         TextField(
+          controller: controller,
           obscureText: true,
           decoration: InputDecoration(
             hintText: "••••••••",
@@ -673,11 +688,6 @@ Future<void> _deleteStaff(String id) async {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(color: const Color(0xFF4B5580)),
-            ),
-            suffixIcon: const Icon(
-              Icons.remove_red_eye,
-              color: Color(0xFF9CA3AF),
-              size: 18,
             ),
           ),
         ),

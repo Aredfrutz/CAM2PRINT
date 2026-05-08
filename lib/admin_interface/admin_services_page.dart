@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/app/app_router.dart';
+import 'package:image/image.dart' as img;
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:typed_data';
 
 
 // DATA MODEL
@@ -10,6 +13,7 @@ class ServiceItem {
   final String price;
   final String category;
   final String section;
+  final String? imageUrl;
 
   ServiceItem({
     required this.id,
@@ -17,7 +21,26 @@ class ServiceItem {
     required this.price,
     required this.category,
     required this.section,
+    this.imageUrl,
   });
+
+  ServiceItem copyWith({
+    int? id,
+    String? name,
+    String? price,
+    String? category,
+    String? section,
+    String? imageUrl,
+  }) {
+    return ServiceItem(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      price: price ?? this.price,
+      category: category ?? this.category,
+      section: section ?? this.section,
+      imageUrl: imageUrl ?? this.imageUrl,
+    );
+  }
 }
 
 class AdminServicesPage extends StatefulWidget {
@@ -29,6 +52,10 @@ class AdminServicesPage extends StatefulWidget {
 
 class _AdminServicesPageState extends State<AdminServicesPage> {
   String _selectedCategory = 'Packages';
+  bool _isLoading = true;
+  bool _isSavingItem = false;
+  Uint8List? _newItemPhotoBytes;
+  final ImagePicker _picker = ImagePicker();
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
@@ -57,36 +84,7 @@ class _AdminServicesPageState extends State<AdminServicesPage> {
 
   final Map<String, List<String>> _categorySections = {};
 
-  final List<ServiceItem> _items = [
-    ServiceItem(
-      id: 1,
-      name: "Basic Package",
-      price: "1,000",
-      category: "Packages",
-      section: "Packages",
-    ),
-    ServiceItem(
-      id: 2,
-      name: "Premium Package",
-      price: "2,500",
-      category: "Packages",
-      section: "Premium Packages",
-    ),
-    ServiceItem(
-      id: 3,
-      name: "Wedding Souvenir",
-      price: "50",
-      category: "Souvenir",
-      section: "Souvenir",
-    ),
-    ServiceItem(
-      id: 4,
-      name: "Birthday Invite",
-      price: "30",
-      category: "Invitation",
-      section: "Invitation",
-    ),
-  ];
+  final List<ServiceItem> _items = [];
 
   @override
   void initState() {
@@ -95,6 +93,7 @@ class _AdminServicesPageState extends State<AdminServicesPage> {
       _categorySections[cat] = [cat];
     }
     _categorySections['Packages']!.add('Premium Packages');
+    _loadServices();
   }
 
   String? _targetSectionForNewPackage;
@@ -102,31 +101,191 @@ class _AdminServicesPageState extends State<AdminServicesPage> {
   // ==========================================
   // ITEM LOGIC
   // ==========================================
-  void _addNewPackage() {
-    if (_nameController.text.isNotEmpty &&
-        _priceController.text.isNotEmpty &&
-        _targetSectionForNewPackage != null) {
-      setState(() {
-        _items.add(
+  Future<Uint8List> _compressImage(Uint8List bytes) async {
+    final decoded = img.decodeImage(bytes);
+    if (decoded == null) return bytes;
+    final resized = decoded.width > 1200
+        ? img.copyResize(decoded, width: 1200)
+        : decoded;
+    return Uint8List.fromList(img.encodeJpg(resized, quality: 75));
+  }
+
+  Future<void> _pickServicePhoto() async {
+    final file = await _picker.pickImage(source: ImageSource.gallery);
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
+    if (!mounted) return;
+    setState(() {
+      _newItemPhotoBytes = bytes;
+    });
+  }
+
+  Future<void> _loadServices() async {
+    try {
+      final rows = await Supabase.instance.client
+          .from('services')
+          .select()
+          .order('id');
+
+      final parsed = <ServiceItem>[];
+      for (final row in rows) {
+        final map = Map<String, dynamic>.from(row);
+        final category = (map['category'] ?? 'Packages').toString();
+        final section = (map['section'] ?? category).toString();
+        if (!_categorySections.containsKey(category)) {
+          _categorySections[category] = [category];
+        }
+        if (!_categorySections[category]!.contains(section)) {
+          _categorySections[category]!.add(section);
+        }
+        parsed.add(
           ServiceItem(
-            id: DateTime.now().millisecondsSinceEpoch,
-            name: _nameController.text,
-            price: _priceController.text,
-            category: _selectedCategory,
-            section: _targetSectionForNewPackage!,
+            id: map['id'] is int
+                ? map['id'] as int
+                : int.tryParse((map['id'] ?? 0).toString()) ?? 0,
+            name: (map['name'] ?? '').toString(),
+            price: (map['price'] ?? '').toString(),
+            category: category,
+            section: section,
+            imageUrl: (map['image_url'] ?? '').toString().isEmpty
+                ? null
+                : (map['image_url'] ?? '').toString(),
           ),
         );
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _items
+          ..clear()
+          ..addAll(parsed);
       });
-      _nameController.clear();
-      _priceController.clear();
-      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to load services: $e')));
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  void _deleteItem(int id) {
-    setState(() {
-      _items.removeWhere((element) => element.id == id);
-    });
+  Future<void> _addNewPackage() async {
+    if (_nameController.text.isNotEmpty &&
+        _priceController.text.isNotEmpty &&
+        _targetSectionForNewPackage != null) {
+      try {
+        setState(() => _isSavingItem = true);
+        String? imageUrl;
+        if (_newItemPhotoBytes != null) {
+          final compressed = await _compressImage(_newItemPhotoBytes!);
+          final path =
+              'services/${DateTime.now().millisecondsSinceEpoch}_${_nameController.text.trim().replaceAll(' ', '_')}.jpg';
+          await Supabase.instance.client.storage.from('services-photos').uploadBinary(
+            path,
+            compressed,
+            fileOptions: const FileOptions(
+              contentType: 'image/jpeg',
+              upsert: false,
+            ),
+          );
+          imageUrl = Supabase.instance.client.storage
+              .from('services-photos')
+              .getPublicUrl(path);
+        }
+
+        await Supabase.instance.client.from('services').insert({
+          'name': _nameController.text.trim(),
+          'price': _priceController.text.trim(),
+          'category': _selectedCategory,
+          'section': _targetSectionForNewPackage!,
+          'image_url': imageUrl,
+        });
+
+        _nameController.clear();
+        _priceController.clear();
+        _newItemPhotoBytes = null;
+        if (!mounted) return;
+        Navigator.pop(context);
+        await _loadServices();
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to save item: $e')));
+      } finally {
+        if (mounted) setState(() => _isSavingItem = false);
+      }
+    }
+  }
+
+  Future<void> _deleteItem(int id) async {
+    try {
+      await Supabase.instance.client.from('services').delete().eq('id', id);
+      if (!mounted) return;
+      setState(() {
+        _items.removeWhere((element) => element.id == id);
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to delete item: $e')));
+    }
+  }
+
+  Future<void> _showEditPriceDialog(ServiceItem item) async {
+    final controller = TextEditingController(text: item.price);
+    await showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Edit Price'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            hintText: 'Enter new price',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newPrice = controller.text.trim();
+              if (newPrice.isEmpty) return;
+              try {
+                await Supabase.instance.client
+                    .from('services')
+                    .update({'price': newPrice})
+                    .eq('id', item.id);
+
+                if (!mounted) return;
+                setState(() {
+                  final idx = _items.indexWhere((x) => x.id == item.id);
+                  if (idx >= 0) {
+                    _items[idx] = _items[idx].copyWith(price: newPrice);
+                  }
+                });
+                if (!dialogContext.mounted) return;
+                Navigator.pop(dialogContext);
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Failed to update price: $e')),
+                );
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
   }
 
   // ==========================================
@@ -246,26 +405,42 @@ class _AdminServicesPageState extends State<AdminServicesPage> {
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
                     ],
                   ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.cloud_upload_outlined, size: 35),
-                      const SizedBox(height: 5),
-                      const Text(
-                        "Upload a Picture",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                  child: InkWell(
+                    onTap: _pickServicePhoto,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (_newItemPhotoBytes != null)
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.memory(
+                                _newItemPhotoBytes!,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                              ),
+                            ),
+                          )
+                        else ...[
+                          const Icon(Icons.cloud_upload_outlined, size: 35),
+                          const SizedBox(height: 5),
+                          const Text(
+                            "Upload a Picture",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(width: 20),
@@ -302,7 +477,7 @@ class _AdminServicesPageState extends State<AdminServicesPage> {
               width: double.infinity,
               height: 45,
               child: ElevatedButton(
-                onPressed: _addNewPackage,
+                onPressed: _isSavingItem ? null : _addNewPackage,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF52B788),
                   shape: RoundedRectangleBorder(
@@ -310,14 +485,23 @@ class _AdminServicesPageState extends State<AdminServicesPage> {
                   ),
                   elevation: 0,
                 ),
-                child: const Text(
-                  "Save",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: _isSavingItem
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        "Save",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -811,6 +995,10 @@ class _AdminServicesPageState extends State<AdminServicesPage> {
   }
 
   Widget _buildMainContentPanel() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     final sections = _categorySections[_selectedCategory] ?? [];
 
     return Container(
@@ -930,6 +1118,12 @@ class _AdminServicesPageState extends State<AdminServicesPage> {
             decoration: BoxDecoration(
               color: const Color(0xFF6A7B9C),
               borderRadius: BorderRadius.circular(4),
+              image: item.imageUrl != null
+                  ? DecorationImage(
+                      image: NetworkImage(item.imageUrl!),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
           ),
         ),
@@ -948,16 +1142,19 @@ class _AdminServicesPageState extends State<AdminServicesPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              "${item.price}",
-              style: const TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
-                fontSize: 11,
+            InkWell(
+              onTap: () => _showEditPriceDialog(item),
+              child: Text(
+                item.price,
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                ),
               ),
             ),
             GestureDetector(
-              onTap: () => _deleteItem(item.id),
+              onTap: () async => _deleteItem(item.id),
               child: const Icon(Icons.delete, size: 12, color: Colors.black54),
             ),
           ],

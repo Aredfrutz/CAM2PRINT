@@ -3,7 +3,6 @@ import 'package:flutter_application_1/app/app_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:collection/collection.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 final DateTime date = DateTime.now();
 
@@ -618,7 +617,7 @@ class _OverallInventoryPageState extends State<OverallInventoryPage> {
                                 textAlign: TextAlign.left,
                                 textStyle: TextStyle(
                                   color: Theme.of(context).colorScheme.primary,
-                                  fontSize: 13,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                 ),
                                 initialSelection: _selectedCategory,
@@ -680,12 +679,12 @@ class _OverallInventoryPageState extends State<OverallInventoryPage> {
                                 elevation: 0.0,
                                 backgroundColor: Theme.of(context).colorScheme.primary,
                                 tooltip: 'Add Item',
+                                onPressed: _showAddItemDialog,
                                 child: const Icon(
                                   Icons.add,
                                   color: Colors.white,
                                   size: 20,
                                 ),
-                                onPressed: _showAddItemDialog,
                               ),
                             ),
                           ],
@@ -794,7 +793,7 @@ class _SchoolSuppliesState extends State<_SchoolSupplies> {
                   horizontalInside: BorderSide(
                     color: Theme.of(context)
                         .colorScheme
-                        .onBackground
+                        .onSurface
                         .withOpacity(0.2),
                     width: 0.5,
                   ),

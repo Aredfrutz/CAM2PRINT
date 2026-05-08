@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:image/image.dart' as img;
 
 class StaffProfile extends StatefulWidget {
   const StaffProfile({super.key});
@@ -40,6 +41,7 @@ class _StaffProfileState extends State<StaffProfile> {
 
  
   String _staffName = 'Loading...';
+  String _employeeId = '';
   String _employeeType = 'Full Time Employee';
   String _shopBranch = 'Loadding...';
   // 1. Change this to DateTime.now() so it doesn't default to April
@@ -91,6 +93,7 @@ Future<void> _loadStaffData() async {
     if (mounted) {
       setState(() {
         _staffName = profileData['full_name'] ?? 'Staff';
+        _employeeId = (profileData['employee_id'] ?? user.id).toString();
         _employeeType = profileData['employment_status'] ?? 'Full Time';
         _shopBranch = profileData['assigned_branch'] ?? 'Loading...';
         
@@ -107,6 +110,116 @@ Future<void> _loadStaffData() async {
     }
   }
 }
+
+  Future<Uint8List> _compressAttendanceImage(Uint8List input) async {
+    final decoded = img.decodeImage(input);
+    if (decoded == null) return input;
+
+    final resized = decoded.width > 1280
+        ? img.copyResize(decoded, width: 1280)
+        : decoded;
+    return Uint8List.fromList(img.encodeJpg(resized, quality: 75));
+  }
+
+  Future<void> _handleAttendanceSelfie(String attendanceType) async {
+    if (_isProcessing) return;
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      setState(() => _isProcessing = true);
+
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.camera,
+        preferredCameraDevice: CameraDevice.front,
+      );
+
+      if (pickedFile == null) return;
+
+      final originalBytes = await pickedFile.readAsBytes();
+      final compressedBytes = await _compressAttendanceImage(originalBytes);
+      final filePath =
+          '${user.id}/${attendanceType}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      await supabase.storage.from('attendance-photos').uploadBinary(
+            filePath,
+            compressedBytes,
+            fileOptions: const FileOptions(
+              contentType: 'image/jpeg',
+              upsert: false,
+            ),
+          );
+
+      final imageUrl =
+          supabase.storage.from('attendance-photos').getPublicUrl(filePath);
+
+      await supabase.from('attendance_logs').insert({
+        'employee_id': _employeeId.isEmpty ? user.id : _employeeId,
+        'image_url': imageUrl,
+        'attendance_type': attendanceType,
+        // Intentionally omit created_at so DB default now() is used.
+      });
+
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).maybePop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            attendanceType == 'time_in'
+                ? 'Time In selfie recorded successfully.'
+                : 'Time Out selfie recorded successfully.',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to record attendance: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  void _showAttendanceActionDialog() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Attendance Selfie'),
+        content: const Text(
+          'Choose attendance type. This opens your camera and uploads the selfie to Supabase.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: _isProcessing
+                ? null
+                : () async {
+                    Navigator.of(dialogContext).pop();
+                    await _handleAttendanceSelfie('time_in');
+                  },
+            child: const Text('Time In'),
+          ),
+          TextButton(
+            onPressed: _isProcessing
+                ? null
+                : () async {
+                    Navigator.of(dialogContext).pop();
+                    await _handleAttendanceSelfie('time_out');
+                  },
+            child: const Text('Time Out'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<DateTime?> _extractDateFromPhoto(Uint8List imageBytes) async {
     try {
@@ -697,10 +810,18 @@ if (_followUpPhotoBytes != null) {
                         color: Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                         child: InkWell(
-                          onTap: () => Navigator.pushReplacementNamed(
-                            context,
-                            AppRouter.login,
-                          ),
+                          onTap: () async {
+                            try {
+                              await supabase.auth.signOut();
+                            } catch (_) {
+                              // Continue navigation even if remote sign-out fails.
+                            }
+                            if (!context.mounted) return;
+                            Navigator.pushReplacementNamed(
+                              context,
+                              AppRouter.login,
+                            );
+                          },
                           borderRadius: BorderRadius.circular(12),
                           child: const Padding(
                             padding: EdgeInsets.symmetric(
@@ -870,8 +991,7 @@ if (_followUpPhotoBytes != null) {
                           ),
                           const SizedBox(width: 15),
                           ElevatedButton(
-                            onPressed: () =>
-                                setState(() => _showEntryForm = true),
+                            onPressed: _showAttendanceActionDialog,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF1A237E),
                               padding: const EdgeInsets.symmetric(

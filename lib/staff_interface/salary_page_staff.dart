@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:collection/collection.dart';
 import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
 import 'package:intl/intl.dart';
-import 'dart:math';
 import 'package:flutter_application_1/app/app_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -88,6 +86,38 @@ class StaffSalaryPage extends StatefulWidget {
 }
 
 class _StaffSalaryPageState extends State<StaffSalaryPage> {
+  String _staffName = "Staff";
+  String _staffRole = "Staff";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStaffProfile();
+  }
+
+  Future<void> _loadStaffProfile() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    try {
+      final profile = await Supabase.instance.client
+          .from('profiles')
+          .select('full_name, employment_status')
+          .eq('id', user.id)
+          .single();
+
+      if (!mounted) return;
+      setState(() {
+        _staffName = (profile['full_name'] ?? 'Staff').toString();
+        _staffRole = (profile['employment_status'] ?? 'Staff').toString();
+        final roleLower = _staffRole.toLowerCase();
+        staffBoolean = roleLower.contains('full')
+            ? IsFullTimeStaff.yes
+            : IsFullTimeStaff.no;
+      });
+      formula();
+    } catch (_) {}
+  }
+
   //Formula para macompute Salary
   void formula() {
     if (staffBoolean == IsFullTimeStaff.yes) {
@@ -227,7 +257,7 @@ class _StaffSalaryPageState extends State<StaffSalaryPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    selectedStaff!.label,
+                    _staffName,
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -236,7 +266,7 @@ class _StaffSalaryPageState extends State<StaffSalaryPage> {
                   ),
                   SizedBox(height: 2),
                   Text(
-                    staffBoolean!.label,
+                    _staffRole,
                     style: TextStyle(
                       fontSize: 13,
                       color: Theme.of(context).colorScheme.onPrimary,
@@ -283,21 +313,21 @@ class _StaffSalaryPageState extends State<StaffSalaryPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _RODataItem(context, 'Total Sales for Printing',
-                          '₱ ' + TSPrintValue.toStringAsFixed(2),
-                          TSPrintPercentageValue.toString() + '%'),
+                          '₱ ${TSPrintValue.toStringAsFixed(2)}',
+                          '$TSPrintPercentageValue%'),
                       _RODataItem(context, 'Total Sales for Photocopy/Xerox',
-                          '₱ ' + TSXeroxValue.toStringAsFixed(2),
-                          TSXeroxPercentageValue.toString() + '%'),
+                          '₱ ${TSXeroxValue.toStringAsFixed(2)}',
+                          '$TSXeroxPercentageValue%'),
                       _RODataItem(context, 'Total Sales for School Supplies',
-                          '₱ ' + TSSuppliesValue.toStringAsFixed(2),
-                          TSSuppliesPercentageValue.toString() + '%'),
+                          '₱ ${TSSuppliesValue.toStringAsFixed(2)}',
+                          '$TSSuppliesPercentageValue%'),
                       _RODataItem(context, 'Total Sales for Party Needs',
-                          '₱ ' + TSPartyValue.toStringAsFixed(2),
-                          TSPartyPercentageValue.toString() + '%'),
+                          '₱ ${TSPartyValue.toStringAsFixed(2)}',
+                          '$TSPartyPercentageValue%'),
                       _RODataItem(context, 'Commission Amount',
-                          '₱ ' + CAmountValue.toStringAsFixed(2), ''),
+                          '₱ ${CAmountValue.toStringAsFixed(2)}', ''),
                       _RODataItem(context, 'Deductions from Violations',
-                          '₱ ' + DViolationsValue.toStringAsFixed(2), ''),
+                          '₱ ${DViolationsValue.toStringAsFixed(2)}', ''),
                     ],
                   ),
                 ),
@@ -308,18 +338,18 @@ class _StaffSalaryPageState extends State<StaffSalaryPage> {
                     children: [
                       _RODataItem(context, 'Deductions from PhilHealth',
                           staffBoolean == IsFullTimeStaff.yes
-                              ? '₱ ' + DPhilHealthValue.toStringAsFixed(2)
+                              ? '₱ ${DPhilHealthValue.toStringAsFixed(2)}'
                               : 'N/A',
                           ''),
                       _RODataItem(context, 'Deductions from SSS',
                           staffBoolean == IsFullTimeStaff.yes
-                              ? '₱ ' + DSSSValue.toStringAsFixed(2)
+                              ? '₱ ${DSSSValue.toStringAsFixed(2)}'
                               : 'N/A',
                           ''),
                       _RODataItem(context, 'Late Deduction',
-                          '₱ ' + LDeductionValue.toStringAsFixed(2), ''),
+                          '₱ ${LDeductionValue.toStringAsFixed(2)}', ''),
                       _RODataItem(context, 'Cash Advance',
-                          '₱ ' + CAdvanceValue.toStringAsFixed(2), ''),
+                          '₱ ${CAdvanceValue.toStringAsFixed(2)}', ''),
                       _RONotesItem(context, 'Notes and Reminders',
                           NRemindersValue == "" ? "No notes." : NRemindersValue),
                     ],
@@ -349,7 +379,9 @@ class _StaffSalaryPageState extends State<StaffSalaryPage> {
               ),
             ),
           ),
-          Row(
+          Flexible(
+            child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
               Text(
                 value,
@@ -370,6 +402,7 @@ class _StaffSalaryPageState extends State<StaffSalaryPage> {
                   ),
                 ),
             ],
+            ),
           ),
         ],
       ),
@@ -425,12 +458,15 @@ class _StaffSalaryPageState extends State<StaffSalaryPage> {
               ),
             ),
             const SizedBox(height: 16),
-            Text(
-              "₱ ${SalaryComputed.toStringAsFixed(2)}",
-              style: TextStyle(
-                fontSize: 48,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onPrimary,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                "₱ ${SalaryComputed.toStringAsFixed(2)}",
+                style: TextStyle(
+                  fontSize: 40,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -698,11 +734,11 @@ class _StaffSalaryPageState extends State<StaffSalaryPage> {
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              const Column(
+                              Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    "Jane",
+                                    _staffName,
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
@@ -710,7 +746,7 @@ class _StaffSalaryPageState extends State<StaffSalaryPage> {
                                     ),
                                   ),
                                   Text(
-                                    "Staff",
+                                    _staffRole,
                                     style: TextStyle(
                                       fontSize: 11,
                                       color: Color(0xFF1A237E),

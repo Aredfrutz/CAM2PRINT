@@ -35,8 +35,8 @@ final Map<String, TextEditingController> _dynamicControllers = {
 
 DateTime? _selectedEventDate;
   // ✅ ADDED THESE TWO VARIABLES TO FIX YOUR ERRORS
-  String _userName = 'Loading...'; 
-  String _userRole = 'Staff';
+  final String _userName = 'Loading...'; 
+  final String _userRole = 'Staff';
   
 Future<void> _saveOrderToSupabase() async {
   final String currentItem = _activeItem; 
@@ -1980,7 +1980,7 @@ Future<void> _saveOrderToSupabase() async {
                           child: _buildTabChip(tab),
                         ),
                       )
-                      .toList(),
+                      ,
                   // Build More Button
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/app/app_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:math' as math;
 
 
 // DATA MODEL
@@ -10,6 +11,7 @@ class ServiceItem {
   final String price;
   final String category;
   final String section;
+  final String? imageUrl;
 
   ServiceItem({
     required this.id,
@@ -17,6 +19,7 @@ class ServiceItem {
     required this.price,
     required this.category,
     required this.section,
+    this.imageUrl,
   });
 }
 
@@ -29,6 +32,7 @@ class StaffServicesPage extends StatefulWidget {
 
 class _StaffServicesPageState extends State<StaffServicesPage> {
   String _selectedCategory = 'Packages';
+  bool _isLoading = true;
 
   final List<String> _mainCategories = [
     'Packages',
@@ -53,37 +57,7 @@ class _StaffServicesPageState extends State<StaffServicesPage> {
 
   final Map<String, List<String>> _categorySections = {};
 
-  // DUMMY DATABASE
-  final List<ServiceItem> _items = [
-    ServiceItem(
-      id: 1,
-      name: "Basic Package",
-      price: "1,000",
-      category: "Packages",
-      section: "Packages",
-    ),
-    ServiceItem(
-      id: 2,
-      name: "Premium Package",
-      price: "2,500",
-      category: "Packages",
-      section: "Premium Packages",
-    ),
-    ServiceItem(
-      id: 3,
-      name: "Wedding Souvenir",
-      price: "50",
-      category: "Souvenir",
-      section: "Souvenir",
-    ),
-    ServiceItem(
-      id: 4,
-      name: "Birthday Invite",
-      price: "30",
-      category: "Invitation",
-      section: "Invitation",
-    ),
-  ];
+  final List<ServiceItem> _items = [];
 
   @override
   void initState() {
@@ -92,6 +66,61 @@ class _StaffServicesPageState extends State<StaffServicesPage> {
       _categorySections[cat] = [cat];
     }
     _categorySections['Packages']!.add('Premium Packages');
+    _loadServices();
+  }
+
+  Future<void> _loadServices() async {
+    try {
+      final rows = await Supabase.instance.client
+          .from('services')
+          .select()
+          .order('id');
+
+      final parsed = <ServiceItem>[];
+      for (final row in rows) {
+        final map = Map<String, dynamic>.from(row);
+        final category = (map['category'] ?? 'Packages').toString();
+        final section = (map['section'] ?? category).toString();
+
+        if (!_categorySections.containsKey(category)) {
+          _categorySections[category] = [category];
+        }
+        if (!_categorySections[category]!.contains(section)) {
+          _categorySections[category]!.add(section);
+        }
+
+        parsed.add(
+          ServiceItem(
+            id: map['id'] is int
+                ? map['id'] as int
+                : int.tryParse((map['id'] ?? 0).toString()) ?? 0,
+            name: (map['name'] ?? '').toString(),
+            price: (map['price'] ?? '').toString(),
+            category: category,
+            section: section,
+            imageUrl: (map['image_url'] ?? '').toString().isEmpty
+                ? null
+                : (map['image_url'] ?? '').toString(),
+          ),
+        );
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _items
+          ..clear()
+          ..addAll(parsed);
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load services: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   void _navigateTo(String pageName) {
@@ -439,7 +468,7 @@ class _StaffServicesPageState extends State<StaffServicesPage> {
       margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.85),
+        color: Colors.white.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(30),
       ),
       child: Row(
@@ -562,6 +591,10 @@ class _StaffServicesPageState extends State<StaffServicesPage> {
   }
 
   Widget _buildMainContentPanel() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     final sections = _categorySections[_selectedCategory] ?? [];
 
     return Container(
@@ -621,19 +654,27 @@ class _StaffServicesPageState extends State<StaffServicesPage> {
                   ),
                 ),
               )
-            : GridView.builder(
-                padding: const EdgeInsets.all(20),
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 8,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 20,
-                  childAspectRatio: 0.62,
-                ),
-                itemCount: currentItems.length,
-                itemBuilder: (context, index) =>
-                    _buildViewOnlyItemCard(currentItems[index]),
+            : LayoutBuilder(
+                builder: (context, constraints) {
+                  final crossAxisCount = math.max(
+                    2,
+                    math.min(8, (constraints.maxWidth / 140).floor()),
+                  );
+                  return GridView.builder(
+                    padding: const EdgeInsets.all(20),
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 20,
+                      childAspectRatio: 0.62,
+                    ),
+                    itemCount: currentItems.length,
+                    itemBuilder: (context, index) =>
+                        _buildViewOnlyItemCard(currentItems[index]),
+                  );
+                },
               ),
       ],
     );
@@ -648,6 +689,12 @@ class _StaffServicesPageState extends State<StaffServicesPage> {
             decoration: BoxDecoration(
               color: const Color(0xFF6A7B9C),
               borderRadius: BorderRadius.circular(4),
+              image: item.imageUrl != null
+                  ? DecorationImage(
+                      image: NetworkImage(item.imageUrl!),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
           ),
         ),

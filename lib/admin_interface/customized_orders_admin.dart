@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/app/app_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 
 class CustomizedOrdersPage extends StatefulWidget {
@@ -216,7 +215,9 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPage> {
   void _closeMoreMenu() {
     _moreOverlayEntry?.remove();
     _moreOverlayEntry = null;
-    setState(() => _isMoreOpen = false);
+    if (mounted) {
+      setState(() => _isMoreOpen = false);
+    }
   }
 
   Widget _buildDropdownMenu() {
@@ -859,8 +860,9 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPage> {
   }
 
   Widget _buildFloatingView() {
-    if (!_showFloatingDetails || _selectedOrder == null)
+    if (!_showFloatingDetails || _selectedOrder == null) {
       return const SizedBox.shrink();
+    }
 
     final String itemType = _selectedOrder!['item'] ?? '';
 

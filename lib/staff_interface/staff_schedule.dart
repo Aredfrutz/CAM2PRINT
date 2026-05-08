@@ -12,6 +12,7 @@ class StaffSchedule extends StatefulWidget {
 
 class _StaffScheduleState extends State<StaffSchedule> {
   DateTime _currentDate = DateTime.now();
+  String _staffName = 'Staff';
 
   final List<String> _branches = [
     "CAMPO",
@@ -31,6 +32,48 @@ class _StaffScheduleState extends State<StaffSchedule> {
 
   DateTime get _endOfWeek {
     return _startOfWeek.add(const Duration(days: 6));
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStaffProfile();
+  }
+
+  Future<void> _loadStaffProfile() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    try {
+      final profile = await Supabase.instance.client
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+      if (!mounted) return;
+      setState(() {
+        _staffName = (profile['full_name'] ?? 'Staff').toString();
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _saveLeaveRequest({
+    required DateTime? startDate,
+    required DateTime? endDate,
+    required String reason,
+    required String status,
+  }) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    await Supabase.instance.client.from('leave_requests').insert({
+      'staff_id': user.id,
+      'staff_name': _staffName,
+      'start_date': startDate?.toIso8601String().split('T').first,
+      'end_date': endDate?.toIso8601String().split('T').first,
+      'reason': reason,
+      'status': status,
+      // created_at intentionally omitted to use DB default.
+    });
   }
 
   void _previousWeek() {
@@ -217,6 +260,8 @@ class _StaffScheduleState extends State<StaffSchedule> {
   void _showLeaveRequestForm() {
     DateTime? selectedStartDate;
     DateTime? selectedEndDate;
+    final reasonController = TextEditingController();
+    bool isSubmitting = false;
 
     showDialog(
       context: context,
@@ -265,15 +310,14 @@ class _StaffScheduleState extends State<StaffSchedule> {
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.grey.shade300),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
                       Expanded(
                         child: Text(
-                          'Select Staff',
-                          style: TextStyle(color: Colors.grey),
+                          _staffName,
+                          style: const TextStyle(color: Color(0xFF1A237E)),
                         ),
                       ),
-                      Icon(Icons.keyboard_arrow_down, color: Color(0xFF1A237E)),
                     ],
                   ),
                 ),
@@ -425,7 +469,8 @@ class _StaffScheduleState extends State<StaffSchedule> {
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.grey.shade300),
                   ),
-                  child: const TextField(
+                  child: TextField(
+                    controller: reasonController,
                     maxLines: null,
                     expands: true,
                     textAlignVertical: TextAlignVertical.top,
@@ -442,12 +487,39 @@ class _StaffScheduleState extends State<StaffSchedule> {
                   children: [
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Saved as Draft')),
-                          );
-                        },
+                        onPressed: isSubmitting
+                            ? null
+                            : () async {
+                                try {
+                                  setDialogState(() => isSubmitting = true);
+                                  await _saveLeaveRequest(
+                                    startDate: selectedStartDate,
+                                    endDate: selectedEndDate,
+                                    reason: reasonController.text.trim(),
+                                    status: 'draft',
+                                  );
+                                  if (!context.mounted) return;
+                                  Navigator.of(context).pop();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Saved as Draft'),
+                                    ),
+                                  );
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Failed to save draft: $e',
+                                      ),
+                                    ),
+                                  );
+                                } finally {
+                                  if (context.mounted) {
+                                    setDialogState(() => isSubmitting = false);
+                                  }
+                                }
+                              },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFE53935),
                           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -455,25 +527,63 @@ class _StaffScheduleState extends State<StaffSchedule> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: const Text(
-                          'Save as Draft',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
+                        child: isSubmitting
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                'Save as Draft',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Leave Request Submitted!')),
-                          );
-                        },
+                        onPressed: isSubmitting
+                            ? null
+                            : () async {
+                                try {
+                                  setDialogState(() => isSubmitting = true);
+                                  await _saveLeaveRequest(
+                                    startDate: selectedStartDate,
+                                    endDate: selectedEndDate,
+                                    reason: reasonController.text.trim(),
+                                    status: 'submitted',
+                                  );
+                                  if (!context.mounted) return;
+                                  Navigator.of(context).pop();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Leave Request Submitted!',
+                                      ),
+                                    ),
+                                  );
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Failed to submit leave request: $e',
+                                      ),
+                                    ),
+                                  );
+                                } finally {
+                                  if (context.mounted) {
+                                    setDialogState(() => isSubmitting = false);
+                                  }
+                                }
+                              },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF43A047),
                           padding: const EdgeInsets.symmetric(vertical: 14),

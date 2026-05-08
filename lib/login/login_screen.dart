@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/app/app_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // ✅ This is just the LoginScreen widget - no main() or MyApp needed!
@@ -16,13 +17,51 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _rememberMe = false;
   bool _obscurePassword = true;
-  bool _isForgotHovered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRememberedCredentials();
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadRememberedCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rememberMe = prefs.getBool('remember_me') ?? false;
+    final rememberedEmail = prefs.getString('remembered_email') ?? '';
+    final rememberedPassword = prefs.getString('remembered_password') ?? '';
+
+    if (!mounted) return;
+    setState(() {
+      _rememberMe = rememberMe;
+      if (rememberMe) {
+        _emailController.text = rememberedEmail;
+        _passwordController.text = rememberedPassword;
+      }
+    });
+  }
+
+  Future<void> _persistRememberMeState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('remember_me', _rememberMe);
+
+    if (_rememberMe) {
+      await prefs.setString('remembered_email', _emailController.text.trim());
+      await prefs.setString(
+        'remembered_password',
+        _passwordController.text.trim(),
+      );
+      return;
+    }
+
+    await prefs.remove('remembered_email');
+    await prefs.remove('remembered_password');
   }
 
   @override
@@ -154,23 +193,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text('Remember me', style: TextStyle(color: textColor)),
                 ],
               ),
-              MouseRegion(
-                cursor: SystemMouseCursors.click,
-                onHover: (_) => setState(() => _isForgotHovered = true),
-                onExit: (_) => setState(() => _isForgotHovered = false),
-                child: GestureDetector(
-                  onTap: () {},
-                  child: Text(
-                    'Forgot password?',
-                    style: TextStyle(
-                      color: textColor,
-                      decoration: _isForgotHovered ? TextDecoration.underline : TextDecoration.none,
-                      decorationThickness: 2,
-                      decorationColor: textColor,
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 30),
@@ -265,6 +287,8 @@ class _LoginScreenState extends State<LoginScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
+
+      await _persistRememberMeState();
 
       // 2. Get the role from the user's metadata
       final userRole = response.user?.userMetadata?['role'] ?? 'staff';

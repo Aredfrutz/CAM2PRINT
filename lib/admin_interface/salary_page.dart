@@ -6,7 +6,6 @@ import 'package:collection/collection.dart';
 import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
 import 'package:intl/intl.dart';
 import 'dart:math';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 
 /* Status ng Salary:
@@ -1306,7 +1305,7 @@ class _SalaryPageState extends State<SalaryPage>
 
   //Calculation Section
   Widget _CalculationSection(BuildContext context) {
-    final ScrollController _scrollController = ScrollController();
+    final ScrollController scrollController = ScrollController();
     return Card(
       color: Theme.of(context).colorScheme.secondary,
       child: LayoutBuilder(
@@ -2588,7 +2587,7 @@ Widget _SalarySection(BuildContext context) {
           children: [
             Align(
               alignment: Alignment.centerLeft,
-              child: Container(
+              child: SizedBox(
                 width: 360,
                 child: Expanded(
                   child: TabBar(
@@ -2620,7 +2619,7 @@ Widget _SalarySection(BuildContext context) {
               ),
             ),
             Expanded(
-              child: new TabBarView(
+              child: TabBarView(
                 controller: tabController,
                 children: <Widget>[
                   Column(
