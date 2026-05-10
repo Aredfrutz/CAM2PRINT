@@ -3,8 +3,6 @@ import 'package:flutter_application_1/app/app_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 
-
-
 class StaffSchedule extends StatefulWidget {
   const StaffSchedule({super.key});
 
@@ -58,24 +56,58 @@ class _StaffScheduleState extends State<StaffSchedule> {
     } catch (_) {}
   }
 
+  // ✅ NEW: Fetch existing draft from database
+  Future<Map<String, dynamic>?> _fetchExistingDraft() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return null;
+    
+    try {
+      final response = await Supabase.instance.client
+          .from('leave_requests')
+          .select()
+          .eq('staff_id', user.id)
+          .eq('status', 'draft')
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+      return response;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ✅ UPDATED: Handle both INSERT and UPDATE with draftId
   Future<void> _saveLeaveRequest({
     required DateTime? startDate,
     required DateTime? endDate,
     required String reason,
     required String status,
+    String? draftId, // 👈 Optional ID for updating existing draft
   }) async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
-    await Supabase.instance.client.from('leave_requests').insert({
+    final payload = {
       'staff_id': user.id,
       'staff_name': _staffName,
       'start_date': startDate?.toIso8601String().split('T').first,
       'end_date': endDate?.toIso8601String().split('T').first,
       'reason': reason,
       'status': status,
-      // created_at intentionally omitted to use DB default.
-    });
+    };
+
+    if (draftId != null) {
+      // 👉 Update existing draft
+      await Supabase.instance.client
+          .from('leave_requests')
+          .update(payload)
+          .eq('id', draftId);
+    } else {
+      // 👉 Insert new draft
+      await Supabase.instance.client
+          .from('leave_requests')
+          .insert(payload);
+    }
   }
 
   void _previousWeek() {
@@ -116,7 +148,6 @@ class _StaffScheduleState extends State<StaffSchedule> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Opening Shift Section
               const Text(
                 'Opening Shift',
                 style: TextStyle(
@@ -144,7 +175,6 @@ class _StaffScheduleState extends State<StaffSchedule> {
                 ),
               ),
               const SizedBox(height: 8),
-              // Opening Shift Time In Box
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
@@ -181,8 +211,6 @@ class _StaffScheduleState extends State<StaffSchedule> {
                 ),
               ),
               const SizedBox(height: 16),
-
-              // Closing Shift Section
               const Text(
                 'Closing Shift',
                 style: TextStyle(
@@ -210,7 +238,6 @@ class _StaffScheduleState extends State<StaffSchedule> {
                 ),
               ),
               const SizedBox(height: 8),
-              // Closing Shift Time Out Box
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
@@ -259,259 +286,273 @@ class _StaffScheduleState extends State<StaffSchedule> {
     );
   }
 
-void _showLeaveRequestForm() {
-  DateTime? selectedStartDate;
-  DateTime? selectedEndDate;
-  final reasonController = TextEditingController();
-  bool isSubmitting = false;
+  // ✅ UPDATED: Fetch draft on open and pre-populate fields
+  void _showLeaveRequestForm() async {
+    // Fetch existing draft first
+    final existingDraft = await _fetchExistingDraft();
+    
+    DateTime? selectedStartDate = existingDraft?['start_date'] != null 
+        ? DateTime.tryParse(existingDraft!['start_date']) 
+        : null;
+    DateTime? selectedEndDate = existingDraft?['end_date'] != null 
+        ? DateTime.tryParse(existingDraft!['end_date']) 
+        : null;
+    final reasonController = TextEditingController(
+      text: existingDraft?['reason'] ?? '',
+    );
+    final draftId = existingDraft?['id']; // Store ID if updating
+    bool isSubmitting = false;
 
-  showDialog(
-    context: context,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setDialogState) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 500),
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Leave Request',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1A237E)),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Submit for Admin Approval',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-              const SizedBox(height: 24),
-
-              // ✅ STAFF NAME FIELD REMOVED - Auto-saved from logged-in user
-
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'START DATE',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A237E)),
-                        ),
-                        const SizedBox(height: 8),
-                        InkWell(
-                          onTap: () async {
-                            final DateTime? picked = await showDatePicker(
-                              context: context,
-                              initialDate: DateTime.now(),
-                              firstDate: DateTime(2020),
-                              lastDate: DateTime(2030),
-                            );
-                            if (picked != null) {
-                              setDialogState(() => selectedStartDate = picked);
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF5F5F5),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey.shade300),
-                            ),
-                            child: Row(
-                              children: [
-                                Text(
-                                  selectedStartDate == null
-                                      ? 'mm/dd/yyyy'
-                                      : '${selectedStartDate!.month.toString().padLeft(2, '0')}/${selectedStartDate!.day.toString().padLeft(2, '0')}/${selectedStartDate!.year}',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: selectedStartDate != null ? const Color(0xFF1A237E) : Colors.grey,
-                                  ),
-                                ),
-                                const Spacer(),
-                                const Icon(Icons.calendar_today, size: 18, color: Color(0xFF1A237E)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'END DATE',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A237E)),
-                        ),
-                        const SizedBox(height: 8),
-                        InkWell(
-                          onTap: () async {
-                            final DateTime? picked = await showDatePicker(
-                              context: context,
-                              initialDate: DateTime.now(),
-                              firstDate: DateTime(2020),
-                              lastDate: DateTime(2030),
-                            );
-                            if (picked != null) {
-                              setDialogState(() => selectedEndDate = picked);
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF5F5F5),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey.shade300),
-                            ),
-                            child: Row(
-                              children: [
-                                Text(
-                                  selectedEndDate == null
-                                      ? 'mm/dd/yyyy'
-                                      : '${selectedEndDate!.month.toString().padLeft(2, '0')}/${selectedEndDate!.day.toString().padLeft(2, '0')}/${selectedEndDate!.year}',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: selectedEndDate != null ? const Color(0xFF1A237E) : Colors.grey,
-                                  ),
-                                ),
-                                const Spacer(),
-                                const Icon(Icons.calendar_today, size: 18, color: Color(0xFF1A237E)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              const Text(
-                'REASON FOR LEAVE',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A237E)),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                height: 150,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.shade300),
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 500),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Leave Request',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1A237E)),
                 ),
-                child: TextField(
-                  controller: reasonController,
-                  maxLines: null,
-                  expands: true,
-                  textAlignVertical: TextAlignVertical.top,
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    hintText: 'Enter reason for leave...',
-                    hintStyle: TextStyle(color: Colors.grey),
-                  ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Submit for Admin Approval',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
                 ),
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: isSubmitting
-                          ? null
-                          : () async {
-                              try {
-                                setDialogState(() => isSubmitting = true);
-                                await _saveLeaveRequest(
-                                  startDate: selectedStartDate,
-                                  endDate: selectedEndDate,
-                                  reason: reasonController.text.trim(),
-                                  status: 'draft',
-                                );
-                                if (!context.mounted) return;
-                                Navigator.of(context).pop();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Saved as Draft')),
-                                );
-                              } catch (e) {
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Failed to save draft: $e')),
-                                );
-                              } finally {
-                                if (context.mounted) {
-                                  setDialogState(() => isSubmitting = false);
-                                }
+                // Start Date
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'START DATE',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A237E)),
+                          ),
+                          const SizedBox(height: 8),
+                          InkWell(
+                            onTap: () async {
+                              final DateTime? picked = await showDatePicker(
+                                context: context,
+                                initialDate: selectedStartDate ?? DateTime.now(),
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime(2030),
+                              );
+                              if (picked != null) {
+                                setDialogState(() => selectedStartDate = picked);
                               }
                             },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE53935),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF5F5F5),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    selectedStartDate == null
+                                        ? 'mm/dd/yyyy'
+                                        : '${selectedStartDate!.month.toString().padLeft(2, '0')}/${selectedStartDate!.day.toString().padLeft(2, '0')}/${selectedStartDate!.year}',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: selectedStartDate != null ? const Color(0xFF1A237E) : Colors.grey,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  const Icon(Icons.calendar_today, size: 18, color: Color(0xFF1A237E)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      child: isSubmitting
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Text('Save as Draft', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: isSubmitting
-                          ? null
-                          : () async {
-                              try {
-                                setDialogState(() => isSubmitting = true);
-                                await _saveLeaveRequest(
-                                  startDate: selectedStartDate,
-                                  endDate: selectedEndDate,
-                                  reason: reasonController.text.trim(),
-                                  status: 'submitted',
-                                );
-                                if (!context.mounted) return;
-                                Navigator.of(context).pop();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Leave Request Submitted!')),
-                                );
-                              } catch (e) {
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Failed to submit leave request: $e')),
-                                );
-                              } finally {
-                                if (context.mounted) {
-                                  setDialogState(() => isSubmitting = false);
-                                }
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'END DATE',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A237E)),
+                          ),
+                          const SizedBox(height: 8),
+                          InkWell(
+                            onTap: () async {
+                              final DateTime? picked = await showDatePicker(
+                                context: context,
+                                initialDate: selectedEndDate ?? DateTime.now(),
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime(2030),
+                              );
+                              if (picked != null) {
+                                setDialogState(() => selectedEndDate = picked);
                               }
                             },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF43A047),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF5F5F5),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    selectedEndDate == null
+                                        ? 'mm/dd/yyyy'
+                                        : '${selectedEndDate!.month.toString().padLeft(2, '0')}/${selectedEndDate!.day.toString().padLeft(2, '0')}/${selectedEndDate!.year}',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: selectedEndDate != null ? const Color(0xFF1A237E) : Colors.grey,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  const Icon(Icons.calendar_today, size: 18, color: Color(0xFF1A237E)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      child: const Text('Submit', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Reason
+                const Text(
+                  'REASON FOR LEAVE',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A237E)),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  height: 150,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: TextField(
+                    controller: reasonController,
+                    maxLines: null,
+                    expands: true,
+                    textAlignVertical: TextAlignVertical.top,
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      hintText: 'Enter reason for leave...',
+                      hintStyle: TextStyle(color: Colors.grey),
                     ),
                   ),
-                ],
-              ),
-            ],
+                ),
+                const SizedBox(height: 24),
+
+                // Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: isSubmitting
+                            ? null
+                            : () async {
+                                try {
+                                  setDialogState(() => isSubmitting = true);
+                                  await _saveLeaveRequest(
+                                    startDate: selectedStartDate,
+                                    endDate: selectedEndDate,
+                                    reason: reasonController.text.trim(),
+                                    status: 'draft',
+                                    draftId: draftId,
+                                  );
+                                  if (!context.mounted) return;
+                                  Navigator.of(context).pop();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Saved as Draft')),
+                                  );
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Failed to save draft: $e')),
+                                  );
+                                } finally {
+                                  if (context.mounted) {
+                                    setDialogState(() => isSubmitting = false);
+                                  }
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE53935),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: isSubmitting
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Text('Save as Draft', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: isSubmitting
+                            ? null
+                            : () async {
+                                try {
+                                  setDialogState(() => isSubmitting = true);
+                                  await _saveLeaveRequest(
+                                    startDate: selectedStartDate,
+                                    endDate: selectedEndDate,
+                                    reason: reasonController.text.trim(),
+                                    status: 'submitted',
+                                    draftId: draftId,
+                                  );
+                                  if (!context.mounted) return;
+                                  Navigator.of(context).pop();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Leave Request Submitted!')),
+                                  );
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Failed to submit leave request: $e')),
+                                  );
+                                } finally {
+                                  if (context.mounted) {
+                                    setDialogState(() => isSubmitting = false);
+                                  }
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF43A047),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: const Text('Submit', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   void _navigateTo(String pageName) {
     if (!mounted) return;
@@ -705,8 +746,8 @@ void _showLeaveRequestForm() {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            "Saturday, January 31, 2026",
+                          Text(
+                            "${DateFormat('EEEE, MMMM dd, yyyy').format(DateTime.now())}",
                             style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14, color: Color(0xFF1A237E)),
                           ),
                           Row(
@@ -725,11 +766,11 @@ void _showLeaveRequestForm() {
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              const Column(
+                              Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text("Jane", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1A237E))),
-                                  Text("Staff", style: TextStyle(fontSize: 11, color: Color(0xFF1A237E))),
+                                  Text(_staffName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1A237E))),
+                                  const Text("Staff", style: TextStyle(fontSize: 11, color: Color(0xFF1A237E))),
                                 ],
                               ),
                             ],
@@ -882,5 +923,11 @@ void _showLeaveRequestForm() {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    // Clean up controllers if needed
+    super.dispose();
   }
 }

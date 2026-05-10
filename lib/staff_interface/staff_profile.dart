@@ -8,7 +8,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:image/image.dart' as img;
 
 class StaffProfile extends StatefulWidget {
   const StaffProfile({super.key});
@@ -18,9 +17,7 @@ class StaffProfile extends StatefulWidget {
 }
 
 class _StaffProfileState extends State<StaffProfile> {
-  bool _showEntryForm = false;
   bool _isProcessing = false;
-  
 
   // Photo data
   Uint8List? _verificationPhotoBytes;
@@ -36,200 +33,80 @@ class _StaffProfileState extends State<StaffProfile> {
 
   final TextEditingController _typeController = TextEditingController();
 
-
   final supabase = Supabase.instance.client;
 
- 
   String _staffName = 'Loading...';
   String _employeeId = '';
   String _employeeType = 'Full Time Employee';
-  String _shopBranch = 'Loadding...';
-  // 1. Change this to DateTime.now() so it doesn't default to April
-  DateTime _currentMonth = DateTime.now(); 
+  String _shopBranch = 'Loading...';
+  DateTime _currentMonth = DateTime.now();
   Map<String, Map<String, dynamic>> _attendanceData = {};
 
-  // 2. MERGED initState
   @override
-  void initState() {  
+  void initState() {
     super.initState();
-    _currentMonth = DateTime.now(); // Set to current date (May 2026)
-    _loadStaffData();               // Keep your existing data loader
-  }
-  
-Future<void> _loadStaffData() async {
-  final user = supabase.auth.currentUser;
-  if (user == null) return;
-
-  try {
-    // 1. Fetch Profile Data (Name, Branch, etc.)
-    final profileData = await supabase
-        .from('profiles')
-        .select()
-        .eq('id', user.id)
-        .single();
-
-    // 2. Fetch Attendance History from your new table
-    final List<dynamic> attendanceRows = await supabase
-        .from('attendance')
-        .select()
-        .eq('staff_id', user.id);
-
-    // 3. Map the database rows to your Calendar's format
-    final Map<String, Map<String, dynamic>> loadedHistory = {};
-    
-    for (var row in attendanceRows) {
-      // row['date'] comes from Supabase as 'yyyy-mm-dd'
-      final String dateKey = row['date'] ?? ''; 
-      if (dateKey.isNotEmpty) {
-        loadedHistory[dateKey] = {
-          'timeIn': row['time_in'] ?? '--:--',
-          'type': row['entry_type'] ?? 'Unknown',
-          'hasProofPhoto': 'true',
-        };
-      }
-    }
-
-    // 4. Update the UI all at once
-    if (mounted) {
-  // ✅ Extract user ID first
-  final userId = user.id;
-  
-  // ✅ Fetch TODAY's assigned branch
-  final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-  final assignment = await supabase
-      .from('branch_assignments')
-      .select('branch_name')
-      .eq('assignment_date', today)
-      .or('opening_staff_id.eq.$userId,closing_staff_id.eq.$userId')
-      .maybeSingle();
-
-  // ✅ Update UI
-  setState(() {
-    _staffName = profileData['full_name'] ?? 'Staff';
-    _employeeId = (profileData['employee_id'] ?? user.id).toString();
-    _employeeType = profileData['employment_status'] ?? 'Full Time';
-    _shopBranch = assignment?['branch_name'] ?? profileData['assigned_branch'] ?? 'Main Branch';
-    _attendanceData = loadedHistory;
-  });
-}
-  } catch (e) {
-    debugPrint("Error loading staff data: $e");
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading history: $e')),
-      );
-    }
-  }
-}
-
-  Future<Uint8List> _compressAttendanceImage(Uint8List input) async {
-    final decoded = img.decodeImage(input);
-    if (decoded == null) return input;
-
-    final resized = decoded.width > 1280
-        ? img.copyResize(decoded, width: 1280)
-        : decoded;
-    return Uint8List.fromList(img.encodeJpg(resized, quality: 75));
+    _currentMonth = DateTime.now();
+    _loadStaffData();
   }
 
-  Future<void> _handleAttendanceSelfie(String attendanceType) async {
-    if (_isProcessing) return;
+  Future<void> _loadStaffData() async {
     final user = supabase.auth.currentUser;
     if (user == null) return;
 
     try {
-      setState(() => _isProcessing = true);
+      final profileData = await supabase
+          .from('profiles')
+          .select()
+          .eq('id', user.id)
+          .single();
 
-      final XFile? pickedFile = await _picker.pickImage(
-        source: ImageSource.camera,
-        preferredCameraDevice: CameraDevice.front,
-      );
+      final List<dynamic> attendanceRows = await supabase
+          .from('attendance')
+          .select()
+          .eq('staff_id', user.id);
 
-      if (pickedFile == null) return;
+      final Map<String, Map<String, dynamic>> loadedHistory = {};
 
-      final originalBytes = await pickedFile.readAsBytes();
-      final compressedBytes = await _compressAttendanceImage(originalBytes);
-      final filePath =
-          '${user.id}/${attendanceType}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      for (var row in attendanceRows) {
+        final String dateKey = row['date'] ?? '';
+        if (dateKey.isNotEmpty) {
+          loadedHistory[dateKey] = {
+            'timeIn': row['time_in'] ?? '--:--',
+            'type': row['entry_type'] ?? 'Unknown',
+            'hasProofPhoto': 'true',
+          };
+        }
+      }
 
-      await supabase.storage.from('attendance-photos').uploadBinary(
-            filePath,
-            compressedBytes,
-            fileOptions: const FileOptions(
-              contentType: 'image/jpeg',
-              upsert: false,
-            ),
-          );
+      if (mounted) {
+        final userId = user.id;
+        final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+        final assignment = await supabase
+            .from('branch_assignments')
+            .select('branch_name')
+            .eq('assignment_date', today)
+            .or('opening_staff_id.eq.$userId,closing_staff_id.eq.$userId')
+            .maybeSingle();
 
-      final imageUrl =
-          supabase.storage.from('attendance-photos').getPublicUrl(filePath);
-
-      await supabase.from('attendance_logs').insert({
-        'employee_id': _employeeId.isEmpty ? user.id : _employeeId,
-        'image_url': imageUrl,
-        'attendance_type': attendanceType,
-        // Intentionally omit created_at so DB default now() is used.
-      });
-
-      if (!mounted) return;
-      Navigator.of(context, rootNavigator: true).maybePop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            attendanceType == 'time_in'
-                ? 'Time In selfie recorded successfully.'
-                : 'Time Out selfie recorded successfully.',
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
+        setState(() {
+          _staffName = profileData['full_name'] ?? 'Staff';
+          _employeeId = (profileData['employee_id'] ?? user.id).toString();
+          _employeeType = profileData['employment_status'] ?? 'Full Time';
+          _shopBranch =
+              assignment?['branch_name'] ??
+              profileData['assigned_branch'] ??
+              'Main Branch';
+          _attendanceData = loadedHistory;
+        });
+      }
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to record attendance: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _isProcessing = false);
+      debugPrint("Error loading staff  $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading history: $e')),
+        );
+      }
     }
-  }
-
-  void _showAttendanceActionDialog() {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Attendance Selfie'),
-        content: const Text(
-          'Choose attendance type. This opens your camera and uploads the selfie to Supabase.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: _isProcessing
-                ? null
-                : () async {
-                    Navigator.of(dialogContext).pop();
-                    await _handleAttendanceSelfie('time_in');
-                  },
-            child: const Text('Time In'),
-          ),
-          TextButton(
-            onPressed: _isProcessing
-                ? null
-                : () async {
-                    Navigator.of(dialogContext).pop();
-                    await _handleAttendanceSelfie('time_out');
-                  },
-            child: const Text('Time Out'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<DateTime?> _extractDateFromPhoto(Uint8List imageBytes) async {
@@ -494,37 +371,43 @@ Future<void> _loadStaffData() async {
     ),
   );
 
- // Small fix: Ensure date format is always YYYY-MM-DD for the database
   String _getAttendanceKey(int day, {DateTime? photoDate}) {
     final refDate = photoDate ?? _currentMonth;
-    // padLeft(2, '0') ensures months like May show as "05" instead of "5"
     return '${refDate.year}-${refDate.month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
   }
 
-Future<void> _submitAttendance() async { // 1. Added async
+  Future<void> _submitAttendance() async {
     if (!mounted) return;
-    
-    final user = supabase.auth.currentUser; // 2. Get current user
+
+    final user = supabase.auth.currentUser;
     final typeOfEntry = _typeController.text.trim();
 
-    // --- Keep your existing validation checks ---
     if (_verificationPhotoDate == null || _autoTimeIn == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please upload Verification Photo first'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Please upload Verification Photo first'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
 
     if (_followUpPhotoDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please upload Follow-up Proof Photo'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Please upload Follow-up Proof Photo'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
 
     if (typeOfEntry.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select Type of Entry'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Please select Type of Entry'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -536,58 +419,63 @@ Future<void> _submitAttendance() async { // 1. Added async
 
     if (hasTimeIn) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Time In already recorded'), backgroundColor: Colors.orange),
+        const SnackBar(
+          content: Text('Time In already recorded'),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
 
-    // --- 3. Save to Supabase Table ---
     try {
       setState(() => _isProcessing = true);
-       String? imageUrl;
+      String? imageUrl;
       if (_verificationPhotoBytes != null) {
-  final fileName = '${user!.id}/${DateTime.now().millisecondsSinceEpoch}.jpg';
-  
-  await supabase.storage.from('attendance_proofs').uploadBinary(
-    fileName,
-    _verificationPhotoBytes!,
-  );
+        final fileName =
+            '${user!.id}/${DateTime.now().millisecondsSinceEpoch}.jpg';
 
-  imageUrl = supabase.storage.from('attendance_proofs').getPublicUrl(fileName);
-}
+        await supabase.storage.from('attendance_proofs').uploadBinary(
+          fileName,
+          _verificationPhotoBytes!,
+        );
 
-// --- IMAGE 2: Follow-up Proof Photo (Add this block!) ---
-String? followUpUrl;
-if (_followUpPhotoBytes != null) {
-  final fileName = '${user!.id}/followup_${DateTime.now().millisecondsSinceEpoch}.jpg';
-  await supabase.storage.from('attendance_proofs').uploadBinary(fileName, _followUpPhotoBytes!);
-  followUpUrl = supabase.storage.from('attendance_proofs').getPublicUrl(fileName);
-}
+        imageUrl = supabase.storage
+            .from('attendance_proofs')
+            .getPublicUrl(fileName);
+      }
+
+      String? followUpUrl;
+      if (_followUpPhotoBytes != null) {
+        final fileName =
+            '${user!.id}/followup_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        await supabase.storage
+            .from('attendance_proofs')
+            .uploadBinary(fileName, _followUpPhotoBytes!);
+        followUpUrl = supabase.storage
+            .from('attendance_proofs')
+            .getPublicUrl(fileName);
+      }
 
       await supabase.from('attendance').insert({
         'staff_id': user?.id,
-        'full_name': _staffName,      // Chabe
-        'entry_type': typeOfEntry,     // Nozzle, Pad Lock, etc.
-        'time_in': _autoTimeIn,        // Extracted from photo
-        'date': key,                   // yyyy-mm-dd
-        'proof_url': imageUrl, // This saves the link in your table
-        'follow_up_url': followUpUrl // New secondary photo column
+        'full_name': _staffName,
+        'entry_type': typeOfEntry,
+        'time_in': _autoTimeIn,
+        'date': key,
+        'proof_url': imageUrl,
+        'follow_up_url': followUpUrl,
       });
 
-      // --- 4. Update UI only if Database save succeeds ---
+      if (!mounted) return;
       setState(() {
         if (_attendanceData[key] == null) _attendanceData[key] = {};
         _attendanceData[key]!['timeIn'] = _autoTimeIn!;
         _attendanceData[key]!['type'] = typeOfEntry;
-       _attendanceData[key]!['proofUrl'] = imageUrl; // Store locally for the calendar
+        _attendanceData[key]!['proofUrl'] = imageUrl;
 
-        _showEntryForm = false;
-        
-        // Save these for the success message before clearing
         final displayTime = _autoTimeIn;
         final displayDate = _verificationPhotoDate;
 
-        // Reset the form
         _verificationPhoto = null;
         _verificationPhotoBytes = null;
         _followUpPhoto = null;
@@ -599,14 +487,20 @@ if (_followUpPhotoBytes != null) {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ Time In logged to Database: $displayTime on ${displayDate!.day}/${displayDate.month}'),
+            content: Text(
+              'Time In logged to Database: $displayTime on ${displayDate!.day}/${displayDate.month}',
+            ),
             backgroundColor: Colors.green,
           ),
         );
       });
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ Error saving to Database: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('❌ Error saving to Database: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -660,7 +554,231 @@ if (_followUpPhotoBytes != null) {
     );
   }
 
-  // ✅ ADMIN/DAILYINV STYLE SIDEBAR ITEM
+  // ✅ CENTERED DIALOG FOR ATTENDANCE FORM
+  void _showAttendanceFormDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          width: 450,
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
+          ),
+          padding: const EdgeInsets.all(30),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFFFFFFFF), Color(0xFF7C88C2)],
+            ),
+            boxShadow: const [
+              BoxShadow(color: Colors.black26, blurRadius: 20),
+            ],
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Log Attendance",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A237E),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 28),
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 25),
+
+              // Scrollable content
+              Flexible(
+                child: SingleChildScrollView(
+                  child: _buildAttendanceFormContent(dialogContext),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttendanceFormContent(BuildContext dialogContext) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Time Display Section
+        Container(
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.8),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: _autoTimeIn != null && _verificationPhotoDate != null
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Time In",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF1A237E),
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          _autoTimeIn!,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: Colors.green,
+                          ),
+                        ),
+                        Text(
+                          '${_verificationPhotoDate!.day}/${_verificationPhotoDate!.month}/${_verificationPhotoDate!.year}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                )
+              : const Text(
+                  "Upload verification photo to detect time",
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+        ),
+        const SizedBox(height: 20),
+
+        // Type of Entry
+        const Text(
+          "Type of Entry",
+          style: TextStyle(
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
+            color: Color(0xFF1A237E),
+          ),
+        ),
+        const SizedBox(height: 10),
+        DropdownButtonFormField(
+          initialValue: _typeController.text.isNotEmpty
+              ? _typeController.text
+              : null,
+          items: ["Nozzle", "Pad Lock", "Pocket Money"]
+              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+              .toList(),
+          onChanged: (val) => _typeController.text = val ?? '',
+          decoration: InputDecoration(
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            hintText: 'Select type',
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.8),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Verification Photo
+        const Text(
+          "Verification Photo (Time In)",
+          style: TextStyle(
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
+            color: Color(0xFF1A237E),
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          "Upload screenshot showing time & date",
+          style: TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+        const SizedBox(height: 10),
+        _buildUploadBox(
+          "Upload time/date screenshot",
+          kIsWeb ? _verificationPhotoBytes : null,
+          kIsWeb ? null : _verificationPhoto,
+          () => _pickImage(true),
+        ),
+        const SizedBox(height: 20),
+
+        // Follow-up Photo
+        const Text(
+          "Follow-up Proof Photo",
+          style: TextStyle(
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
+            color: Color(0xFF1A237E),
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          "Photo showing shop opening",
+          style: TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+        const SizedBox(height: 10),
+        _buildUploadBox(
+          "Upload proof photo",
+          kIsWeb ? _followUpPhotoBytes : null,
+          kIsWeb ? null : _followUpPhoto,
+          () => _pickImage(false),
+        ),
+        const SizedBox(height: 20),
+
+        // Loading indicator
+        if (_isProcessing) const Center(child: CircularProgressIndicator()),
+        const SizedBox(height: 10),
+
+        // Submit button
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton(
+            onPressed: _isProcessing
+                ? null
+                : () async {
+                    await _submitAttendance();
+                    if (mounted) Navigator.of(dialogContext).pop();
+                  },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            child: const Text(
+              "SUBMIT ATTENDANCE",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildSidebarItem(
     IconData icon,
     String title,
@@ -717,9 +835,9 @@ if (_followUpPhotoBytes != null) {
           ),
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch, // ✅ FIX: Stretch row height
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ✅ SIDEBAR - Staff Style Applied
+            // ✅ SIDEBAR
             Padding(
               padding: const EdgeInsets.only(
                 top: 20.0,
@@ -728,7 +846,7 @@ if (_followUpPhotoBytes != null) {
               ),
               child: Container(
                 width: 240,
-                height: double.infinity, // ✅ FIX: Force full height
+                height: double.infinity,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     begin: Alignment.topCenter,
@@ -738,7 +856,7 @@ if (_followUpPhotoBytes != null) {
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: Column(
-                  mainAxisSize: MainAxisSize.max, // ✅ FIX: Expand to fill height
+                  mainAxisSize: MainAxisSize.max,
                   children: [
                     const SizedBox(height: 30),
                     Padding(
@@ -770,8 +888,6 @@ if (_followUpPhotoBytes != null) {
                       ),
                     ),
                     const SizedBox(height: 40),
-                    
-                    // ✅ STAFF NAVIGATION - DailyInv Style
                     _buildSidebarItem(
                       Icons.inventory_2,
                       "Daily Inventory",
@@ -802,16 +918,7 @@ if (_followUpPhotoBytes != null) {
                       "Schedule",
                       () => _navigateTo('Schedule'),
                     ),
-                    _buildSidebarItem(
-                      Icons.person,
-                      "Profile",
-                      () => _navigateTo('Profile'),
-                      isActive: true, // ✅ Active highlight for Profile page
-                    ),
-                    
-                    const Spacer(), // ✅ Pushes logout to bottom
-                    
-                    // ✅ LOGOUT BUTTON - Staff Style
+                    const Spacer(),
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -824,9 +931,7 @@ if (_followUpPhotoBytes != null) {
                           onTap: () async {
                             try {
                               await supabase.auth.signOut();
-                            } catch (_) {
-                              // Continue navigation even if remote sign-out fails.
-                            }
+                            } catch (_) {}
                             if (!context.mounted) return;
                             Navigator.pushReplacementNamed(
                               context,
@@ -866,6 +971,7 @@ if (_followUpPhotoBytes != null) {
               ),
             ),
 
+            // ✅ MAIN CONTENT
             Expanded(
               child: Container(
                 padding: const EdgeInsets.all(25),
@@ -886,7 +992,9 @@ if (_followUpPhotoBytes != null) {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            DateFormat('EEEE, MMMM d, yyyy').format(DateTime.now()),
+                            DateFormat('EEEE, MMMM d, yyyy').format(
+                              DateTime.now(),
+                            ),
                             style: TextStyle(
                               fontWeight: FontWeight.w500,
                               fontSize: 14,
@@ -920,19 +1028,19 @@ if (_followUpPhotoBytes != null) {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                   Text(
-                                    _staffName, // Changed from "Jane"
-                                   style: const TextStyle(
-                                     fontWeight: FontWeight.bold,
+                                  Text(
+                                    _staffName,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
                                       fontSize: 14,
                                       color: Color(0xFF1A237E),
                                     ),
                                   ),
-                                   const Text(
-                                     "Staff",
-                                     style: TextStyle(
-                                     fontSize: 11,
-                                     color: Color(0xFF1A237E),
+                                  const Text(
+                                    "Staff",
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Color(0xFF1A237E),
                                     ),
                                   ),
                                 ],
@@ -1002,7 +1110,7 @@ if (_followUpPhotoBytes != null) {
                           ),
                           const SizedBox(width: 15),
                           ElevatedButton(
-                            onPressed: _showAttendanceActionDialog,
+                            onPressed: _showAttendanceFormDialog,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF1A237E),
                               padding: const EdgeInsets.symmetric(
@@ -1317,204 +1425,6 @@ if (_followUpPhotoBytes != null) {
                 ),
               ),
             ),
-
-            // Entry Form Panel
-            if (_showEntryForm)
-              Container(
-                width: 450,
-                padding: const EdgeInsets.all(30),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFFFFFFFF), Color(0xFF7C88C2)],
-                  ),
-                  boxShadow: const [
-                    BoxShadow(color: Colors.black12, blurRadius: 20),
-                  ],
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            "Log Attendance",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1A237E),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close, size: 28),
-                            onPressed: () =>
-                                setState(() => _showEntryForm = false),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 25),
-
-                      // Time Display Section
-                      Container(
-                        padding: const EdgeInsets.all(15),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.8),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child:
-                            _autoTimeIn != null &&
-                                _verificationPhotoDate != null
-                            ? Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    "⏱️ Time In",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w500,
-                                      color: Color(0xFF1A237E),
-                                    ),
-                                  ),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        _autoTimeIn!,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 18,
-                                          color: Colors.green,
-                                        ),
-                                      ),
-                                      Text(
-                                        '${_verificationPhotoDate!.day}/${_verificationPhotoDate!.month}/${_verificationPhotoDate!.year}',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              )
-                            : const Text(
-                                "Upload verification photo to detect time",
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      const Text(
-                        "Type of Entry",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 14,
-                          color: Color(0xFF1A237E),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      DropdownButtonFormField(
-                        initialValue: _typeController.text.isNotEmpty
-                            ? _typeController.text
-                            : null,
-                        items: ["Nozzle", "Pad Lock", "Pocket Money"]
-                            .map(
-                              (e) => DropdownMenuItem(value: e, child: Text(e)),
-                            )
-                            .toList(),
-                        onChanged: (val) => _typeController.text = val ?? '',
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          hintText: 'Select type',
-                          filled: true,
-                          fillColor: Colors.white.withOpacity(0.8),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      const Text(
-                        "📷 Verification Photo (Time In)",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 14,
-                          color: Color(0xFF1A237E),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        "Upload screenshot showing time & date",
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                      const SizedBox(height: 10),
-                      _buildUploadBox(
-                        "Upload time/date screenshot",
-                        kIsWeb ? _verificationPhotoBytes : null,
-                        kIsWeb ? null : _verificationPhoto,
-                        () => _pickImage(true),
-                      ),
-                      const SizedBox(height: 20),
-
-                      const Text(
-                        "📷 Follow-up Proof Photo",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 14,
-                          color: Color(0xFF1A237E),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        "Photo showing shop opening",
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                      const SizedBox(height: 10),
-                      _buildUploadBox(
-                        "Upload proof photo",
-                        kIsWeb ? _followUpPhotoBytes : null,
-                        kIsWeb ? null : _followUpPhoto,
-                        () => _pickImage(false),
-                      ),
-                      const SizedBox(height: 20),
-
-                      if (_isProcessing)
-                        const Center(child: CircularProgressIndicator()),
-                      const SizedBox(height: 10),
-
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: _isProcessing ? null : _submitAttendance,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: const Text(
-                            "SUBMIT ATTENDANCE",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
           ],
         ),
       ),

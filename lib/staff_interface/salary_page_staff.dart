@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 import 'package:flutter_application_1/app/app_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-
 /* Status ng Salary (Staff View):
   Kulang nalang ng actual data from the database to fill the variable values.
   This is the Read-Only (RO) view for Staff to view their computed salary.
@@ -118,7 +117,6 @@ class _StaffSalaryPageState extends State<StaffSalaryPage> {
     } catch (_) {}
   }
 
-  //Formula para macompute Salary
   void formula() {
     if (staffBoolean == IsFullTimeStaff.yes) {
       BasicPay =
@@ -193,7 +191,6 @@ class _StaffSalaryPageState extends State<StaffSalaryPage> {
     );
   }
 
-  // ✅ STAFF SIDEBAR ITEM (Copied from StaffProfile)
   Widget _buildSidebarItem(
     IconData icon,
     String title,
@@ -234,7 +231,6 @@ class _StaffSalaryPageState extends State<StaffSalaryPage> {
     );
   }
 
-  //Staff Section (Read-Only)
   Widget _ROStaffSection(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
@@ -263,6 +259,8 @@ class _StaffSalaryPageState extends State<StaffSalaryPage> {
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.onPrimary,
                     ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                   SizedBox(height: 2),
                   Text(
@@ -271,6 +269,8 @@ class _StaffSalaryPageState extends State<StaffSalaryPage> {
                       fontSize: 13,
                       color: Theme.of(context).colorScheme.onPrimary,
                     ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                 ],
               ),
@@ -281,19 +281,18 @@ class _StaffSalaryPageState extends State<StaffSalaryPage> {
     );
   }
 
-//Calculation Section (Read-Only)
-Widget _ROCalculationSection(BuildContext context) {
-  return Container(
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.secondary,
-      borderRadius: BorderRadius.circular(30),
-    ),
-    child: Padding(
-      padding: EdgeInsets.all(20.0),
-      child: SingleChildScrollView(  // ✅ Added scroll view
+  // ✅ FIXED: Earnings Section - Single column layout with scroll
+  Widget _ROCalculationSection(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.secondary,
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [  // ✅ Removed mainAxisSize: MainAxisSize.min
+          children: [
             Center(
               child: Text(
                 'Earnings',
@@ -305,102 +304,98 @@ Widget _ROCalculationSection(BuildContext context) {
               ),
             ),
             Divider(height: 20, color: Theme.of(context).colorScheme.onPrimary),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    children: [  // ✅ Removed mainAxisSize: MainAxisSize.min
-                      _RODataItem(context, 'Total Sales for Printing',
-                          '₱ ${TSPrintValue.toStringAsFixed(2)}',
-                          '$TSPrintPercentageValue%'),
-                      _RODataItem(context, 'Total Sales for Photocopy/Xerox',
-                          '₱ ${TSXeroxValue.toStringAsFixed(2)}',
-                          '$TSXeroxPercentageValue%'),
-                      _RODataItem(context, 'Total Sales for School Supplies',
-                          '₱ ${TSSuppliesValue.toStringAsFixed(2)}',
-                          '$TSSuppliesPercentageValue%'),
-                      _RODataItem(context, 'Total Sales for Party Needs',
-                          '₱ ${TSPartyValue.toStringAsFixed(2)}',
-                          '$TSPartyPercentageValue%'),
-                      _RODataItem(context, 'Commission Amount',
-                          '₱ ${CAmountValue.toStringAsFixed(2)}', ''),
-                      _RODataItem(context, 'Deductions from Violations',
-                          '₱ ${DViolationsValue.toStringAsFixed(2)}', ''),
-                    ],
-                  ),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _RODataItem(context, 'Total Sales for Printing',
+                        '₱ ${TSPrintValue.toStringAsFixed(2)}',
+                        '$TSPrintPercentageValue%'),
+                    _RODataItem(context, 'Total Sales for Photocopy/Xerox',
+                        '₱ ${TSXeroxValue.toStringAsFixed(2)}',
+                        '$TSXeroxPercentageValue%'),
+                    _RODataItem(context, 'Total Sales for School Supplies',
+                        '₱ ${TSSuppliesValue.toStringAsFixed(2)}',
+                        '$TSSuppliesPercentageValue%'),
+                    _RODataItem(context, 'Total Sales for Party Needs',
+                        '₱ ${TSPartyValue.toStringAsFixed(2)}',
+                        '$TSPartyPercentageValue%'),
+                    _RODataItem(context, 'Commission Amount',
+                        '₱ ${CAmountValue.toStringAsFixed(2)}', ''),
+                    _RODataItem(context, 'Deductions from Violations',
+                        '₱ ${DViolationsValue.toStringAsFixed(2)}', ''),
+                    _RODataItem(context, 'Deductions from PhilHealth',
+                        staffBoolean == IsFullTimeStaff.yes
+                            ? '₱ ${DPhilHealthValue.toStringAsFixed(2)}'
+                            : 'N/A',
+                        ''),
+                    _RODataItem(context, 'Deductions from SSS',
+                        staffBoolean == IsFullTimeStaff.yes
+                            ? '₱ ${DSSSValue.toStringAsFixed(2)}'
+                            : 'N/A',
+                        ''),
+                    _RODataItem(context, 'Late Deduction',
+                        '₱ ${LDeductionValue.toStringAsFixed(2)}', ''),
+                    _RODataItem(context, 'Cash Advance',
+                        ' ${CAdvanceValue.toStringAsFixed(2)}', ''),
+                    _RONotesItem(context, 'Notes and Reminders',
+                        NRemindersValue == "" ? "No notes." : NRemindersValue),
+                  ],
                 ),
-                SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    children: [  // ✅ Removed mainAxisSize: MainAxisSize.min
-                      _RODataItem(context, 'Deductions from PhilHealth',
-                          staffBoolean == IsFullTimeStaff.yes
-                              ? '₱ ${DPhilHealthValue.toStringAsFixed(2)}'
-                              : 'N/A',
-                          ''),
-                      _RODataItem(context, 'Deductions from SSS',
-                          staffBoolean == IsFullTimeStaff.yes
-                              ? '₱ ${DSSSValue.toStringAsFixed(2)}'
-                              : 'N/A',
-                          ''),
-                      _RODataItem(context, 'Late Deduction',
-                          '₱ ${LDeductionValue.toStringAsFixed(2)}', ''),
-                      _RODataItem(context, 'Cash Advance',
-                          '₱ ${CAdvanceValue.toStringAsFixed(2)}', ''),
-                      _RONotesItem(context, 'Notes and Reminders',
-                          NRemindersValue == "" ? "No notes." : NRemindersValue),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
+  // ✅ FIXED: Data Item - Flex ratios + overflow handling
   Widget _RODataItem(BuildContext context, String label, String value, String percentage) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7.0),
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Expanded(
+          Flexible(
+            flex: 3,
             child: Text(
               label,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onPrimary,
-                fontSize: 15,
+                fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
             ),
           ),
+          SizedBox(width: 8),
           Flexible(
-            child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Text(
-                value,
-                style: GoogleFonts.baiJamjuree(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onPrimary,
-                ),
-              ),
-              if (percentage.isNotEmpty) SizedBox(width: 8),
-              if (percentage.isNotEmpty)
+            flex: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
                 Text(
-                  percentage,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimary,
+                  value,
+                  style: GoogleFonts.baiJamjuree(
                     fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onPrimary,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-            ],
+                if (percentage.isNotEmpty)
+                  Text(
+                    percentage,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+              ],
             ),
           ),
         ],
@@ -418,7 +413,7 @@ Widget _ROCalculationSection(BuildContext context) {
             label,
             style: TextStyle(
               color: Theme.of(context).colorScheme.onPrimary,
-              fontSize: 15,
+              fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -426,43 +421,44 @@ Widget _ROCalculationSection(BuildContext context) {
           Text(
             value,
             style: GoogleFonts.baiJamjuree(
-              fontSize: 14,
+              fontSize: 12,
               fontStyle: FontStyle.italic,
               color: Theme.of(context).colorScheme.onPrimary,
             ),
+            softWrap: true,
           ),
         ],
       ),
     );
   }
 
-  //Salary Section
+  // ✅ FIXED: Salary Section - Bounded height + scroll
   Widget _SalarySection(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.secondary,
         borderRadius: BorderRadius.circular(30),
       ),
-      child: Container(
+      child: Padding(
         padding: EdgeInsets.all(20),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               "Salary Computed",
               style: TextStyle(
-                fontSize: 24,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: Theme.of(context).colorScheme.onPrimary,
               ),
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
                 "₱ ${SalaryComputed.toStringAsFixed(2)}",
                 style: TextStyle(
-                  fontSize: 40,
+                  fontSize: 36,
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).colorScheme.onPrimary,
                 ),
@@ -473,28 +469,28 @@ Widget _ROCalculationSection(BuildContext context) {
               padding: EdgeInsets.symmetric(horizontal: 40),
               child: Divider(height: 1),
             ),
-            const SizedBox(height: 20),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _SalaryBreakdownRow(context, "Basic Pay",
-                      "₱ ${BasicPay.toStringAsFixed(2)}",
-                      const Color.fromARGB(255, 0, 255, 30)),
-                  const SizedBox(height: 14),
-                  _SalaryBreakdownRow(context, "Commissions",
-                      "₱ ${CAmountValue.toStringAsFixed(2)}",
-                      const Color.fromARGB(255, 0, 255, 30)),
-                  const SizedBox(height: 14),
-                  _SalaryBreakdownRow(context, "Cash Advance",
-                      "₱ ${CAdvanceValue.toStringAsFixed(2)}",
-                      const Color.fromARGB(255, 255, 0, 0)),
-                  const SizedBox(height: 14),
-                  _SalaryBreakdownRow(context, "Other Deductions",
-                      "₱ ${TotalDeductions.toStringAsFixed(2)}",
-                      const Color.fromARGB(255, 255, 0, 0)),
-                ],
+            const SizedBox(height: 16),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _SalaryBreakdownRow(context, "Basic Pay",
+                        "₱ ${BasicPay.toStringAsFixed(2)}",
+                        const Color.fromARGB(255, 0, 255, 30)),
+                    const SizedBox(height: 12),
+                    _SalaryBreakdownRow(context, "Commissions",
+                        "₱ ${CAmountValue.toStringAsFixed(2)}",
+                        const Color.fromARGB(255, 0, 255, 30)),
+                    const SizedBox(height: 12),
+                    _SalaryBreakdownRow(context, "Cash Advance",
+                        "₱ ${CAdvanceValue.toStringAsFixed(2)}",
+                        const Color.fromARGB(255, 255, 0, 0)),
+                    const SizedBox(height: 12),
+                    _SalaryBreakdownRow(context, "Other Deductions",
+                        "₱ ${TotalDeductions.toStringAsFixed(2)}",
+                        const Color.fromARGB(255, 255, 0, 0)),
+                  ],
+                ),
               ),
             ),
           ],
@@ -503,30 +499,39 @@ Widget _ROCalculationSection(BuildContext context) {
     );
   }
 
+  // ✅ FIXED: Breakdown Row - Flex distribution + overflow
   Widget _SalaryBreakdownRow(
       BuildContext context, String label, String value, Color valueColor) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Theme.of(context).colorScheme.onPrimary,
+        Flexible(
+          flex: 2,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).colorScheme.onPrimary,
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
-          textAlign: TextAlign.left,
         ),
-        SizedBox(width: 16),
+        SizedBox(width: 8),
         Expanded(flex: 1, child: Divider(height: 1)),
-        SizedBox(width: 16),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: valueColor,
+        SizedBox(width: 8),
+        Flexible(
+          flex: 2,
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: valueColor,
+            ),
+            textAlign: TextAlign.right,
+            overflow: TextOverflow.ellipsis,
           ),
-          textAlign: TextAlign.right,
         ),
       ],
     );
@@ -547,7 +552,7 @@ Widget _ROCalculationSection(BuildContext context) {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ✅ STAFF SIDEBAR (Copied from StaffProfile)
+            // ✅ STAFF SIDEBAR
             Padding(
               padding: const EdgeInsets.only(
                 top: 20.0,
@@ -599,7 +604,6 @@ Widget _ROCalculationSection(BuildContext context) {
                     ),
                     const SizedBox(height: 40),
                     
-                    // ✅ STAFF NAVIGATION - Same as StaffProfile
                     _buildSidebarItem(
                       Icons.inventory_2,
                       "Daily Inventory",
@@ -634,7 +638,6 @@ Widget _ROCalculationSection(BuildContext context) {
                     
                     const Spacer(),
                     
-                    // ✅ LOGOUT BUTTON - Same as StaffProfile
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -688,7 +691,7 @@ Widget _ROCalculationSection(BuildContext context) {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header Bar (Same style as StaffProfile)
+                    // ✅ FIXED HEADER - Prevents overflow with Flexible & ellipsis
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 25,
@@ -701,15 +704,21 @@ Widget _ROCalculationSection(BuildContext context) {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            "Saturday, January 31, 2026",
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
-                              color: Color(0xFF1A237E),
+                          Flexible(
+                            flex: 2,
+                            child: Text(
+                              "Saturday, January 31, 2026",
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                                color: Color(0xFF1A237E),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
                           ),
                           Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               GestureDetector(
                                 onTap: () => _navigateTo('Notifications'),
@@ -733,25 +742,32 @@ Widget _ROCalculationSection(BuildContext context) {
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    _staffName,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      color: Color(0xFF1A237E),
+                              Flexible(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      _staffName,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                        color: Color(0xFF1A237E),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
                                     ),
-                                  ),
-                                  Text(
-                                    _staffRole,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Color(0xFF1A237E),
+                                    Text(
+                                      _staffRole,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Color(0xFF1A237E),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ],
                           ),
@@ -760,35 +776,27 @@ Widget _ROCalculationSection(BuildContext context) {
                     ),
                     const SizedBox(height: 12),
                     
-                    // Content - Compact layout without scrolling
+                    // ✅ MAIN LAYOUT - Fixed flex ratios & constraints
                     Expanded(
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        spacing: 12,
                         children: [
                           Expanded(
-                            flex: 4,
+                            flex: 5,
                             child: Column(
-                              spacing: 12,
-                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 _ROStaffSection(context),
+                                const SizedBox(height: 12),
                                 Expanded(
                                   child: _ROCalculationSection(context),
                                 ),
                               ],
                             ),
                           ),
+                          const SizedBox(width: 12),
                           Expanded(
-                            flex: 3,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Expanded(
-                                  child: _SalarySection(context),
-                                ),
-                              ],
-                            ),
+                            flex: 4,
+                            child: _SalarySection(context),
                           ),
                         ],
                       ),

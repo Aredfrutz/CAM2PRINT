@@ -847,7 +847,7 @@ Future<void> _showFilterDialog() async {
                   flex: 1,
                   child: Center(
                     child: Text(
-                      _currentTab == 'history' ? 'Old / New' : 'Packs', // ✅ Swaps label
+                      _currentTab == 'history' ? 'Old / New Packs' : 'Packs', // ✅ Swaps label
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 14,
@@ -861,7 +861,7 @@ Future<void> _showFilterDialog() async {
                   flex: 1,
                   child: Center(
                     child: Text(
-                      _currentTab == 'history' ? 'Old / New' : 'Pieces', // ✅ Swaps label
+                      _currentTab == 'history' ? 'Old / New Pieces' : 'Pieces', // ✅ Swaps label
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 14,

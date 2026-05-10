@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/app/app_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 class CustomizedOrdersPages extends StatefulWidget {
   const CustomizedOrdersPages({super.key});
@@ -18,196 +20,107 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPages> {
   bool showFloatingOrderDetails = false;
   Map<String, dynamic>? activeFloatingOrder;
   bool showRemainingBalanceInput = false;
+  bool _isSaving = false;
+  bool _isUploadingImages = false;
+
   final Map<String, TextEditingController> _dynamicControllers = {
     'name': TextEditingController(),
+    'event_date': TextEditingController(),
+    'occasion_type': TextEditingController(),
     'church': TextEditingController(),
     'theme': TextEditingController(),
-    'package': TextEditingController(),
     'reception': TextEditingController(),
-    'additional': TextEditingController(),
+    'additional_info': TextEditingController(),
     'details': TextEditingController(),
-    'downPayment': TextEditingController(),
+    'down_payment': TextEditingController(),
     'balance': TextEditingController(),
-    'occasion': TextEditingController(),
   };
-  DateTime? _selectedEventDate;
-  final String _userName = 'Loading...';
+
+  List<XFile?> _selectedImages = [];
+  final ImagePicker _picker = ImagePicker();
+  final supabase = Supabase.instance.client;
+  String _userName = 'Loading...';
   final String _userRole = 'Staff';
 
-  Future<void> _saveOrderToSupabase() async {
-    final String currentItem = _activeItem;
-    try {
-      await Supabase.instance.client.from('customized_orders').insert({
-        'order_type': currentItem,
-        'staff_name': _userName,
-        'customer_name': (currentItem == 'T-shirt' || currentItem == 'Chipbag')
-            ? 'None'
-            : (_dynamicControllers['name']!.text.isEmpty
-                ? 'None'
-                : _dynamicControllers['name']!.text),
-        'church': (currentItem == 'Packages' || currentItem == 'Invitation')
-            ? (_dynamicControllers['church']!.text.isEmpty
-                ? 'None'
-                : _dynamicControllers['church']!.text)
-            : 'None',
-        'occasion_type':
-            (currentItem == 'Souvenir' || currentItem == 'Ref Magnet')
-                ? (_dynamicControllers['occasion']!.text.isEmpty
-                    ? 'None'
-                    : _dynamicControllers['occasion']!.text)
-                : 'None',
-        'additional_custom_order':
-            _dynamicControllers['additional']!.text.isEmpty
-                ? 'None'
-                : _dynamicControllers['additional']!.text,
-        'theme': _dynamicControllers['theme']!.text.isEmpty
-            ? 'None'
-            : _dynamicControllers['theme']!.text,
-        'reception': _dynamicControllers['reception']!.text.isEmpty
-            ? 'None'
-            : _dynamicControllers['reception']!.text,
-        'event_date': _selectedEventDate?.toIso8601String(),
-        'down_payment': double.tryParse(_dynamicControllers['downPayment']!.text) ?? 0,
-        'balance': double.tryParse(_dynamicControllers['balance']!.text) ?? 0,
-        'payment_status': 'Unpaid',
-        'specific_details': {
-          'item_details': _dynamicControllers['details']?.text ?? 'None',
-        },
-      });
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Order Uploaded!')));
-    } catch (e) {
-      debugPrint("Error saving to Supabase: $e");
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    final user = supabase.auth.currentUser;
+    if (user != null) {
+      final profile = await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
+      if (mounted) setState(() => _userName = profile?['full_name'] ?? 'Staff');
     }
   }
 
-  final List<Map<String, dynamic>> savedOrders = [
-    {
-      'item': 'Package 1',
-      'commissioned': 'Staff Name',
-      'branch': 'CAMPO',
-      'downpayment': '₱ 0.00',
-      'type': 'Packages',
-    },
-    {
-      'item': 'Souvenir',
-      'commissioned': 'Staff Name',
-      'branch': 'CAMPO',
-      'downpayment': '₱ 0.00',
-      'type': 'Souvenir',
-    },
-    {
-      'item': 'Invitation',
-      'commissioned': 'Staff Name',
-      'branch': 'CAMPO',
-      'downpayment': '₱ 0.00',
-      'type': 'Invitation',
-    },
-    {
-      'item': 'Candle',
-      'commissioned': 'Staff Name',
-      'branch': 'CAMPO',
-      'downpayment': '₱ 0.00',
-      'type': 'Candle',
-    },
-    {
-      'item': 'Ref Magnet',
-      'commissioned': 'Staff Name',
-      'branch': 'CAMPO',
-      'downpayment': '₱ 0.00',
-      'type': 'Ref Magnet',
-    },
-    {
-      'item': 'T-shirt',
-      'commissioned': 'Staff Name',
-      'branch': 'CAMPO',
-      'downpayment': '₱ 0.00',
-      'type': 'T-shirt',
-    },
-    {
-      'item': 'Chip Bag',
-      'commissioned': 'Staff Name',
-      'branch': 'CAMPO',
-      'downpayment': '₱ 0.00',
-      'type': 'Chip Bag',
-    },
-    {
-      'item': 'Button Badge',
-      'commissioned': 'Staff Name',
-      'branch': 'CAMPO',
-      'downpayment': '₱ 0.00',
-      'type': 'Button Badge',
-    },
-    {
-      'item': 'Button Pin',
-      'commissioned': 'Staff Name',
-      'branch': 'CAMPO',
-      'downpayment': '₱ 0.00',
-      'type': 'Button Pin',
-    },
-    {
-      'item': 'Party Hat',
-      'commissioned': 'Staff Name',
-      'branch': 'CAMPO',
-      'downpayment': '₱ 0.00',
-      'type': 'Party Hat',
-    },
-    {
-      'item': 'Jigsaw Puzzle',
-      'commissioned': 'Staff Name',
-      'branch': 'CAMPO',
-      'downpayment': '₱ 0.00',
-      'type': 'Jigsaw Puzzle',
-    },
-    {
-      'item': 'Banner',
-      'commissioned': 'Staff Name',
-      'branch': 'CAMPO',
-      'downpayment': '₱ 0.00',
-      'type': 'Banner',
-    },
-    {
-      'item': 'Calendar',
-      'commissioned': 'Staff Name',
-      'branch': 'CAMPO',
-      'downpayment': '₱ 0.00',
-      'type': 'Calendar',
-    },
-    {
-      'item': 'Hair Brush',
-      'commissioned': 'Staff Name',
-      'branch': 'CAMPO',
-      'downpayment': '₱ 0.00',
-      'type': 'Hair Brush',
-    },
-    {
-      'item': 'Clock',
-      'commissioned': 'Staff Name',
-      'branch': 'CAMPO',
-      'downpayment': '₱ 0.00',
-      'type': 'Clock',
-    },
-  ];
+  Future<void> _saveOrderToSupabase() async {
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
 
-  final List<String> mainTabs = [
-    "Packages",
-    "Souvenir",
-    "Invitation",
-    "Candle",
-    "Ref Magnet",
-    "T-shirt",
-    "Chip Bag",
-  ];
-  final List<String> moreItems = [
-    "Button Badge",
-    "Button Pin",
-    "Party Hat",
-    "Jigsaw Puzzle",
-    "Banner",
-    "Calendar",
-    "Hair Brush",
-    "Clock",
-  ];
+    try {
+      List<String> imageUrls = [];
+      if (_selectedImages.isNotEmpty) {
+        for (var img in _selectedImages) {
+          if (img != null) {
+            final bytes = await img.readAsBytes();
+            final fileName = '${DateTime.now().millisecondsSinceEpoch}_${img.name}';
+            await supabase.storage.from('order-images').uploadBinary(
+              fileName, bytes, fileOptions: const FileOptions(contentType: 'image/jpeg'),
+            );
+            imageUrls.add(supabase.storage.from('order-images').getPublicUrl(fileName));
+          }
+        }
+      }
+
+      await supabase.from('customized_orders').insert({
+        'order_type': _activeItem,
+        'staff_name': _userName,
+        'customer_name': _dynamicControllers['name']!.text.trim().isEmpty ? 'None' : _dynamicControllers['name']!.text.trim(),
+        'event_date': _dynamicControllers['event_date']!.text.trim().isEmpty ? null : _dynamicControllers['event_date']!.text.trim(),
+        'occasion_type': _dynamicControllers['occasion_type']!.text.trim().isEmpty ? 'None' : _dynamicControllers['occasion_type']!.text.trim(),
+        'church': _dynamicControllers['church']!.text.trim().isEmpty ? 'None' : _dynamicControllers['church']!.text.trim(),
+        'theme': _dynamicControllers['theme']!.text.trim().isEmpty ? 'None' : _dynamicControllers['theme']!.text.trim(),
+        'reception': _dynamicControllers['reception']!.text.trim().isEmpty ? 'None' : _dynamicControllers['reception']!.text.trim(),
+        'down_payment': double.tryParse(_dynamicControllers['down_payment']!.text) ?? 0,
+        'balance': double.tryParse(_dynamicControllers['balance']!.text) ?? 0,
+        'remaining_balance': double.tryParse(_dynamicControllers['balance']!.text) ?? 0,
+        'payment_status': 'Unpaid',
+        'specific_details': {
+          'additional_info': _dynamicControllers['additional_info']!.text.trim().isEmpty ? 'None' : _dynamicControllers['additional_info']!.text.trim(),
+          'details': _dynamicControllers['details']!.text.trim().isEmpty ? 'None' : _dynamicControllers['details']!.text.trim(),
+        },
+        'image_urls': imageUrls,
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Order Saved to Database!'), backgroundColor: Colors.green));
+      _clearForm();
+    } catch (e) {
+      debugPrint("Error saving: $e");
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Error: $e'), backgroundColor: Colors.red));
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  void _clearForm() {
+    _dynamicControllers.forEach((_, c) => c.clear());
+    _selectedImages.clear();
+    showRemainingBalanceInput = false;
+  }
+
+  Future<void> _pickImages() async {
+    final List<XFile>? images = await _picker.pickMultiImage();
+    if (images != null) {
+      setState(() => _selectedImages = images);
+    }
+  }
+
+  final List<String> mainTabs = ["Packages", "Souvenir", "Invitation", "Candle", "Ref Magnet", "Chip Bag", "Button Badge", "Button Pin"];
+  final List<String> moreItems = ["T-shirt", "Party Hat", "Jigsaw Puzzle", "Banner", "Calendar", "Hair Brush", "Clock"];
 
   void _selectItem(String item) {
     setState(() {
@@ -215,31 +128,20 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPages> {
       _closeMoreMenu();
       showTrackSaved = false;
       showFloatingOrderDetails = false;
+      _clearForm();
     });
   }
 
   void _toggleMoreMenu(BuildContext context) {
-    if (_moreOverlayEntry != null) {
-      _closeMoreMenu();
-    } else {
-      _showMoreMenu(context);
-    }
+    if (_moreOverlayEntry != null) _closeMoreMenu(); else _showMoreMenu(context);
   }
 
   void _showMoreMenu(BuildContext context) {
     final RenderBox button = context.findRenderObject() as RenderBox;
-    final RenderBox overlay =
-        Overlay.of(context).context.findRenderObject() as RenderBox;
-    final Offset position = button.localToGlobal(
-      Offset.zero,
-      ancestor: overlay,
-    );
+    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final Offset position = button.localToGlobal(Offset.zero, ancestor: overlay);
     _moreOverlayEntry = OverlayEntry(
-      builder: (context) => Positioned(
-        top: position.dy + button.size.height + 5,
-        left: position.dx,
-        child: Material(color: Colors.transparent, child: _buildDropdownMenu()),
-      ),
+      builder: (context) => Positioned(top: position.dy + button.size.height + 5, left: position.dx, child: Material(color: Colors.transparent, child: _buildDropdownMenu())),
     );
     Overlay.of(context).insert(_moreOverlayEntry!);
     setState(() => isMoreDropdownOpen = true);
@@ -254,43 +156,25 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPages> {
   @override
   void dispose() {
     _closeMoreMenu();
+    _dynamicControllers.forEach((_, c) => c.dispose());
     super.dispose();
   }
 
-  Widget _buildSidebarItem(
-    IconData icon,
-    String title,
-    VoidCallback onTap, {
-    bool isActive = false,
-  }) {
+  Widget _buildSidebarItem(IconData icon, String title, VoidCallback onTap, {bool isActive = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
       child: Material(
         color: isActive ? Colors.white : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          onTap: onTap, borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(
-              children: [
-                Icon(
-                  icon,
-                  color: isActive ? const Color(0xFF1A237E) : Colors.white70,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: isActive ? const Color(0xFF1A237E) : Colors.white,
-                    fontSize: 13,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
+            child: Row(children: [
+              Icon(icon, color: isActive ? const Color(0xFF1A237E) : Colors.white70, size: 20),
+              const SizedBox(width: 12),
+              Text(title, style: TextStyle(color: isActive ? const Color(0xFF1A237E) : Colors.white, fontSize: 13, fontWeight: isActive ? FontWeight.w600 : FontWeight.w500)),
+            ]),
           ),
         ),
       ),
@@ -302,239 +186,63 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPages> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF7C88C2), Color(0xFFFFFFFF)],
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFF7C88C2), Color(0xFFFFFFFF)])),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.only(
-                top: 20.0,
-                bottom: 20.0,
-                left: 20.0,
-              ),
+              padding: const EdgeInsets.only(top: 20.0, bottom: 20.0, left: 20.0),
               child: Container(
-                width: 240,
-                height: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFF5B6388), Color(0xFF3E4563)],
-                  ),
-                  borderRadius: BorderRadius.circular(30),
-                ),
+                width: 240, height: double.infinity,
+                decoration: BoxDecoration(gradient: const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFF5B6388), Color(0xFF3E4563)]), borderRadius: BorderRadius.circular(30)),
                 child: Column(
-                  mainAxisSize: MainAxisSize.max,
-                  children: [
+                  mainAxisSize: MainAxisSize.max, children: [
                     const SizedBox(height: 30),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Row(
-                        children: [
-                          ClipOval(
-                            child: Image.asset(
-                              'assets/logo.png',
-                              width: 42,
-                              height: 42,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          const Expanded(
-                            child: Text(
-                              'Cam2print System',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                fontStyle: FontStyle.italic,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: Row(children: [
+                      ClipOval(child: Image.asset('assets/logo.png', width: 42, height: 42, fit: BoxFit.cover)),
+                      const SizedBox(width: 10),
+                      const Expanded(child: Text('Cam2print System', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, fontStyle: FontStyle.italic), overflow: TextOverflow.ellipsis)),
+                    ])),
                     const SizedBox(height: 40),
-                    _buildSidebarItem(
-                      Icons.inventory_2,
-                      "Daily Inventory",
-                      () => _navigateTo('Daily Inventory'),
-                    ),
-                    _buildSidebarItem(
-                      Icons.design_services,
-                      "Services",
-                      () => _navigateTo('Services'),
-                    ),
-                    _buildSidebarItem(
-                      Icons.monetization_on,
-                      "Salary",
-                      () => _navigateTo('Salary'),
-                    ),
-                    _buildSidebarItem(
-                      Icons.shopping_cart,
-                      "Consumption Tracker",
-                      () => _navigateTo('Consumption Tracker'),
-                    ),
-                    _buildSidebarItem(
-                      Icons.shopping_bag,
-                      "Customized Orders",
-                      () => _navigateTo('Customized Orders'),
-                      isActive: true,
-                    ),
-                    _buildSidebarItem(
-                      Icons.event_available,
-                      "Schedule",
-                      () => _navigateTo('Schedule'),
-                    ),
+                    _buildSidebarItem(Icons.inventory_2, "Daily Inventory", () => _navigateTo('Daily Inventory')),
+                    _buildSidebarItem(Icons.design_services, "Services", () => _navigateTo('Services')),
+                    _buildSidebarItem(Icons.monetization_on, "Salary", () => _navigateTo('Salary')),
+                    _buildSidebarItem(Icons.shopping_cart, "Consumption Tracker", () => _navigateTo('Consumption Tracker')),
+                    _buildSidebarItem(Icons.shopping_bag, "Customized Orders", () => _navigateTo('Customized Orders'), isActive: true),
+                    _buildSidebarItem(Icons.event_available, "Schedule", () => _navigateTo('Schedule')),
                     const Spacer(),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 16,
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                        child: InkWell(
-                          onTap: () => Navigator.pushReplacementNamed(
-                            context,
-                            AppRouter.login,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 12,
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.logout,
-                                  color: Colors.white70,
-                                  size: 20,
-                                ),
-                                SizedBox(width: 12),
-                                Text(
-                                  'Logout',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+                    Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16), child: Material(color: Colors.transparent, borderRadius: BorderRadius.circular(12), child: InkWell(onTap: () => Navigator.pushReplacementNamed(context, AppRouter.login), borderRadius: BorderRadius.circular(12), child: const Padding(padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12), child: Row(children: [Icon(Icons.logout, color: Colors.white70, size: 20), SizedBox(width: 12), Text('Logout', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500))]))))),
                   ],
                 ),
               ),
             ),
             Expanded(
               child: Container(
-                padding: const EdgeInsets.all(25),
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 30,
-                        vertical: 15,
-                      ),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFB3D4FF),
-                        borderRadius: BorderRadius.all(Radius.circular(20)),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            DateFormat('EEEE, MMMM dd, yyyy')
-                                .format(DateTime.now()),
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
-                              color: Color(0xFF1A237E),
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              GestureDetector(
-                                onTap: () => _navigateTo('Notifications'),
-                                child: const Icon(
-                                  Icons.notifications_none,
-                                  color: Color(0xFF1A237E),
-                                  size: 24,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              GestureDetector(
-                                onTap: () => Navigator.pushReplacementNamed(
-                                  context,
-                                  AppRouter.staffProfile,
-                                ),
-                                child: const CircleAvatar(
-                                  radius: 18,
-                                  backgroundColor: Colors.white,
-                                  child: Icon(
-                                    Icons.person,
-                                    size: 26,
-                                    color: Color(0xFF1A237E),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    _userName,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      color: Color(0xFF1A237E),
-                                    ),
-                                  ),
-                                  Text(
-                                    _userRole,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Color(0xFF1A237E),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          _buildTopBar(),
-                          const SizedBox(height: 16),
-                          Expanded(
-                            child: showFloatingOrderDetails
-                                ? _buildFloatingOrderDetailsView()
-                                : (showTrackSaved
-                                    ? _buildTrackSavedView()
-                                    : _buildFormView()),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                padding: const EdgeInsets.all(20),
+                child: Column(children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 12),
+                    decoration: const BoxDecoration(color: Color(0xFFB3D4FF), borderRadius: BorderRadius.all(Radius.circular(20))),
+                    child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                      Text(DateFormat('EEEE, MMMM dd, yyyy').format(DateTime.now()), style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14, color: Color(0xFF1A237E))),
+                      Row(children: [
+                        GestureDetector(onTap: () => _navigateTo('Notifications'), child: const Icon(Icons.notifications_none, color: Color(0xFF1A237E), size: 24)),
+                        const SizedBox(width: 10),
+                        GestureDetector(onTap: () => Navigator.pushReplacementNamed(context, AppRouter.staffProfile), child: const CircleAvatar(radius: 18, backgroundColor: Colors.white, child: Icon(Icons.person, size: 26, color: Color(0xFF1A237E)))),
+                        const SizedBox(width: 10),
+                        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(_userName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1A237E))), Text(_userRole, style: TextStyle(fontSize: 11, color: Color(0xFF1A237E)))]),
+                      ]),
+                    ]),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: Column(children: [
+                      _buildTopBar(),
+                      const SizedBox(height: 12),
+                      Expanded(child: showFloatingOrderDetails ? _buildFloatingOrderDetailsView() : (showTrackSaved ? _buildTrackSavedView() : _buildFormView())),
+                    ]),
+                  ),
+                ]),
               ),
             ),
           ],
@@ -546,1508 +254,409 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPages> {
   void _navigateTo(String pageName) {
     String? routeName;
     switch (pageName) {
-      case 'Daily Inventory':
-        routeName = AppRouter.staffDailyInv;
-        break;
-      case 'Services':
-        routeName = AppRouter.staffServices;
-        break;
-      case 'Salary':
-        routeName = AppRouter.staffsalary;
-        break;
-      case 'Consumption Tracker':
-        routeName = AppRouter.staffConsumptionTracker;
-        break;
-      case 'Customized Orders':
-        routeName = AppRouter.staffCustomizedOrders;
-        break;
-      case 'Schedule':
-        routeName = AppRouter.staffSchedule;
-        break;
-      case 'Notifications':
-        routeName = AppRouter.notifications;
-        break;
+      case 'Daily Inventory': routeName = AppRouter.staffDailyInv; break;
+      case 'Services': routeName = AppRouter.staffServices; break;
+      case 'Salary': routeName = AppRouter.staffsalary; break;
+      case 'Consumption Tracker': routeName = AppRouter.staffConsumptionTracker; break;
+      case 'Customized Orders': routeName = AppRouter.staffCustomizedOrders; break;
+      case 'Schedule': routeName = AppRouter.staffSchedule; break;
+      case 'Notifications': routeName = AppRouter.notifications; break;
     }
     if (routeName != null) {
-      Navigator.pushReplacementNamed(
-        context,
-        routeName,
-        arguments: routeName == AppRouter.notifications ? false : null,
-      );
+      Navigator.pushReplacementNamed(context, routeName, arguments: routeName == AppRouter.notifications ? false : null);
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$pageName not connected yet.'),
-        duration: const Duration(seconds: 1),
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$pageName not connected yet.'), duration: const Duration(seconds: 1)));
+  }
+
+  Widget _buildFormView() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))]),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          bool isNarrow = constraints.maxWidth < 600;
+          double padding = isNarrow ? 8 : 16;
+          double fontSize = isNarrow ? 16 : 18;
+          
+          return SingleChildScrollView(
+            child: Padding(
+              padding: EdgeInsets.all(padding),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Custom Order: $_activeItem', style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.bold, color: Color(0xFF2E3A59))),
+                const SizedBox(height: 12),
+                _getItemForm(_activeItem),
+                const SizedBox(height: 16),
+                Center(
+                  child: ElevatedButton(
+                    onPressed: _isSaving ? null : _saveOrderToSupabase,
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00C853), padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                    child: _isSaving ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Text("SAVE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                  ),
+                ),
+              ]),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _getItemForm(String item) {
+    switch (item) {
+      case 'Packages':
+      case 'Invitation':
+        return Column(children: [
+          _inputRow("Name", "name", "Date of Occasion/Event", "event_date", isDate2: true),
+          const SizedBox(height: 8),
+          _inputRow("Type of Occasion/Event", "occasion_type", "Church", "church"),
+          const SizedBox(height: 8),
+          _inputRow("Theme", "theme", "Reception", "reception"),
+          const SizedBox(height: 8),
+          _singleInput("Additional Info", "additional_info", maxLines: 2),
+          const SizedBox(height: 12),
+          _imageUpload(5),
+          const SizedBox(height: 12),
+          _paymentRow(),
+        ]);
+      case 'Souvenir':
+        return Column(children: [
+          _inputRow("Name", "name", "Date of Occasion/Event", "event_date", isDate2: true),
+          const SizedBox(height: 8),
+          _inputRow("Type of Occasion/Event", "occasion_type", "Theme", "theme"),
+          const SizedBox(height: 12),
+          _imageUpload(1),
+          const SizedBox(height: 12),
+          _paymentRow(),
+        ]);
+      case 'Ref Magnet':
+        return Column(children: [
+          _inputRow("Name", "name", "Date of Occasion/Event", "event_date", isDate2: true),
+          const SizedBox(height: 8),
+          _inputRow("Type of Occasion/Event", "occasion_type", "Theme", "theme"),
+          const SizedBox(height: 8),
+          _singleInput("Reception", "reception"),
+          const SizedBox(height: 8),
+          _singleInput("Additional Info", "additional_info", maxLines: 2),
+          const SizedBox(height: 12),
+          _imageUpload(5),
+          const SizedBox(height: 12),
+          _paymentRow(),
+        ]);
+      case 'Candle':
+        return Column(children: [
+          _singleInput("Info", "details", maxLines: 2),
+          const SizedBox(height: 12),
+          _paymentRow(),
+        ]);
+      case 'T-shirt':
+      case 'Chip Bag':
+        return Column(children: [
+          _singleInput("Info", "details", maxLines: 2),
+          const SizedBox(height: 12),
+          _imageUpload(5),
+          const SizedBox(height: 12),
+          _paymentRow(),
+        ]);
+      case 'Button Badge':
+        return Column(children: [
+          _singleInput("Name", "name"),
+          const SizedBox(height: 8),
+          _singleInput("Additional Info", "additional_info", maxLines: 2),
+          const SizedBox(height: 12),
+          _imageUpload(1),
+          const SizedBox(height: 12),
+          _paymentRow(),
+        ]);
+      case 'Button Pin':
+        return Column(children: [
+          _singleInput("Name", "name"),
+          const SizedBox(height: 8),
+          _singleInput("Additional Info", "additional_info", maxLines: 2),
+          const SizedBox(height: 12),
+          _paymentRow(),
+        ]);
+      case 'Party Hat':
+        return Column(children: [
+          _inputRow("Name", "name", "Theme", "theme"),
+          const SizedBox(height: 8),
+          _singleInput("Additional Info", "additional_info", maxLines: 2),
+          const SizedBox(height: 12),
+          _imageUpload(5),
+          const SizedBox(height: 12),
+          _paymentRow(),
+        ]);
+      case 'Jigsaw Puzzle':
+        return Column(children: [
+          _inputRow("Theme", "theme", "Info", "details"),
+          const SizedBox(height: 12),
+          _imageUpload(5),
+          const SizedBox(height: 12),
+          _paymentRow(),
+        ]);
+      case 'Banner':
+        return Column(children: [
+          _inputRow("Info", "details", "Theme", "theme"),
+          const SizedBox(height: 12),
+          _paymentRow(),
+        ]);
+      case 'Calendar':
+        return Column(children: [
+          _singleInput("Name", "name"),
+          const SizedBox(height: 8),
+          _singleInput("Additional Info", "additional_info", maxLines: 2),
+          const SizedBox(height: 12),
+          _imageUpload(1),
+          const SizedBox(height: 12),
+          _paymentRow(),
+        ]);
+      case 'Hair Brush':
+        return Column(children: [
+          _singleInput("Name", "name"),
+          const SizedBox(height: 12),
+          _paymentRow(),
+        ]);
+      case 'Clock':
+        return Column(children: [
+          _singleInput("Name", "name"),
+          const SizedBox(height: 12),
+          _imageUpload(13),
+          const SizedBox(height: 12),
+          _paymentRow(),
+        ]);
+      default:
+        return const SizedBox();
+    }
+  }
+
+  Widget _inputRow(String label1, String key1, String label2, String key2, {bool isDate2 = false}) {
+    return Row(children: [
+      Expanded(child: _singleInput(label1, key1)),
+      const SizedBox(width: 8),
+      Expanded(child: isDate2 ? _dateInput(label2, key2) : _singleInput(label2, key2)),
+    ]);
+  }
+
+  Widget _singleInput(String label, String key, {int maxLines = 1}) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+      const SizedBox(height: 4),
+      TextField(controller: _dynamicControllers[key], maxLines: maxLines, decoration: InputDecoration(filled: true, fillColor: const Color(0xFFB0B8D0), border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none), contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10))),
+    ]);
+  }
+
+  Widget _dateInput(String label, String key) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+      const SizedBox(height: 4),
+      GestureDetector(
+        onTap: () async {
+          final picked = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime(2000), lastDate: DateTime(2100));
+          if (picked != null) _dynamicControllers[key]!.text = DateFormat('yyyy-MM-dd').format(picked);
+        },
+        child: AbsorbPointer(child: TextField(controller: _dynamicControllers[key], readOnly: true, decoration: InputDecoration(hintText: 'Select Date', filled: true, fillColor: const Color(0xFFB0B8D0), border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none), contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10)))),
+      ),
+    ]);
+  }
+
+  Widget _imageUpload(int maxImages) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text("Upload Images", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+      const SizedBox(height: 6),
+      GestureDetector(onTap: _pickImages, child: Container(height: 80, decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300, width: 2, style: BorderStyle.solid), borderRadius: BorderRadius.circular(12)),
+        child: _selectedImages.isEmpty 
+          ? const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.cloud_upload_outlined, color: Colors.grey, size: 30), SizedBox(height: 5), Text("Tap to upload images", style: TextStyle(color: Colors.grey))]))
+          : SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: _selectedImages.map((img) => Padding(padding: const EdgeInsets.all(4), child: Image.file(File(img!.path), width: 70, height: 70, fit: BoxFit.cover))).toList())),
+      )),
+      const SizedBox(height: 4),
+      Text("Max ${maxImages} images allowed", style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+    ]);
+  }
+
+  Widget _paymentRow() {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text("Payment Details", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+      const SizedBox(height: 8),
+      Row(children: [
+        Expanded(child: _singleInput("Downpayment", "down_payment")),
+        const SizedBox(width: 8),
+        Expanded(child: _singleInput("Balance", "balance")),
+      ]),
+    ]);
+  }
+
+  Widget _buildTrackSavedView() {
+    return Container(decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))]),
+      child: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: supabase.from('customized_orders').stream(primaryKey: ['id']).order('created_at', ascending: false),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+          if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}'));
+          final orders = snapshot.data ?? [];
+          if (orders.isEmpty) return const Center(child: Text('No orders found. Create one to see it here.'));
+
+          return Column(children: [
+            Container(padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12), decoration: const BoxDecoration(color: Color(0xFF4B5580), borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20))),
+              child: Row(children: const [
+                Expanded(child: Text("Item", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12))),
+                Expanded(child: Text("Commissioned by", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12))),
+                Expanded(child: Text("Customer", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12))),
+                Expanded(child: Text("Status", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12))),
+                Expanded(child: Center(child: Text("Actions", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12)))),
+              ])),
+            Expanded(child: ListView.builder(itemCount: orders.length, itemBuilder: (context, index) {
+              final order = orders[index];
+              return Container(padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12), decoration: BoxDecoration(color: index % 2 == 0 ? Colors.white : const Color(0xFFE8F0FE), border: Border(bottom: BorderSide(color: const Color(0xFFB0C4DE), width: 1))),
+                child: Row(children: [
+                  Expanded(child: Text(order['order_type'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12))),
+                  Expanded(child: Text(order['staff_name'] ?? 'N/A', style: const TextStyle(fontSize: 12))),
+                  Expanded(child: Text(order['customer_name'] ?? 'N/A', style: const TextStyle(fontSize: 12))),
+                  Expanded(child: Text(order['payment_status'] ?? 'Unpaid', style: TextStyle(color: order['payment_status'] == 'Paid' ? Colors.green : Colors.orange, fontWeight: FontWeight.bold, fontSize: 12))),
+                  Expanded(child: Center(child: ElevatedButton(onPressed: () {
+                    setState(() { showFloatingOrderDetails = true; activeFloatingOrder = order; showRemainingBalanceInput = false; });
+                  }, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00C853), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
+                    child: const Text("VIEW", style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)))),
+                  ),
+                ]),
+              );
+            })),
+          ]);
+        },
       ),
     );
   }
 
   Widget _buildFloatingOrderDetailsView() {
-    final isSouvenir = activeFloatingOrder?['item'] == 'Souvenir';
-    final isCandle = activeFloatingOrder?['item'] == 'Candle';
-    final isRefMagnet = activeFloatingOrder?['item'] == 'Ref Magnet';
-    final isTshirtOrChipBag =
-        activeFloatingOrder?['item'] == 'T-shirt' ||
-        activeFloatingOrder?['item'] == 'Chip Bag';
-    final isButtonBadge = activeFloatingOrder?['item'] == 'Button Badge';
-    final isButtonPin = activeFloatingOrder?['item'] == 'Button Pin';
-    final isPartyHat = activeFloatingOrder?['item'] == 'Party Hat';
-    final isJigsawPuzzle = activeFloatingOrder?['item'] == 'Jigsaw Puzzle';
-    final isBanner = activeFloatingOrder?['item'] == 'Banner';
-    final isCalendarOrClock =
-        activeFloatingOrder?['item'] == 'Calendar' ||
-        activeFloatingOrder?['item'] == 'Clock';
-    final isHairBrush = activeFloatingOrder?['item'] == 'Hair Brush';
-    return Stack(
-      children: [
-        GestureDetector(
-          onTap: () => setState(() => showFloatingOrderDetails = false),
-          child: Container(color: Colors.black.withValues(alpha: 0.2)),
-        ),
-        Center(
-          child: Container(
-            width: double.infinity,
-            constraints: const BoxConstraints(maxWidth: 800),
-            padding: const EdgeInsets.all(24),
-            margin: const EdgeInsets.all(40),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.95),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+    final order = activeFloatingOrder;
+    if (order == null) return const SizedBox();
+
+    final double downPayment = (order['down_payment'] as num?)?.toDouble() ?? 0;
+    final double balance = (order['balance'] as num?)?.toDouble() ?? 0;
+    final double remainingBalance = (order['remaining_balance'] as num?)?.toDouble() ?? balance;
+    final bool isPaid = remainingBalance <= 0;
+    final double totalPaid = downPayment + (balance - remainingBalance);
+    final details = (order['specific_details'] as Map?) ?? {};
+
+    return Stack(children: [
+      GestureDetector(onTap: () => setState(() => showFloatingOrderDetails = false), child: Container(color: Colors.black.withValues(alpha: 0.2))),
+      Center(
+        child: Container(
+          width: double.infinity, constraints: const BoxConstraints(maxWidth: 700), padding: const EdgeInsets.all(16), margin: const EdgeInsets.all(30),
+          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.95), borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 10))]),
+          child: SingleChildScrollView(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text("${order['order_type'] ?? 'Order Details'}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2E3A59))),
+                IconButton(icon: const Icon(Icons.close), onPressed: () => setState(() => showFloatingOrderDetails = false)),
+              ]),
+              const SizedBox(height: 12),
+              _readOnlyInput("Customer Name", order['customer_name'] ?? 'N/A'),
+              const SizedBox(height: 8),
+              _readOnlyInput("Event Date", order['event_date'] ?? 'N/A'),
+              const SizedBox(height: 8),
+              _readOnlyInput("Theme", order['theme'] ?? 'N/A'),
+              const SizedBox(height: 8),
+              _readOnlyInput("Additional Info", details['additional_info'] ?? 'None'),
+              const SizedBox(height: 8),
+              _readOnlyInput("Details", details['details'] ?? 'None'),
+              const SizedBox(height: 12),
+              
+              Text("Payment Information", style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF2E3A59))),
+              const SizedBox(height: 8),
+              Row(children: [
+                Expanded(child: _readOnlyInput("Down Payment", "₱${downPayment.toStringAsFixed(2)}")),
+                const SizedBox(width: 8),
+                Expanded(child: _readOnlyInput(isPaid ? "Total Paid Amount" : "Remaining Balance", isPaid ? "₱${totalPaid.toStringAsFixed(2)}" : "₱${remainingBalance.toStringAsFixed(2)}")),
+              ]),
+              const SizedBox(height: 12),
+              
+              if (!isPaid && !showRemainingBalanceInput) ...[
+                Row(children: [
+                  ElevatedButton(onPressed: () => setState(() => showRemainingBalanceInput = true), style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00C853)), child: const Text("INPUT REMAINING BALANCE", style: TextStyle(color: Colors.white))),
+                  const SizedBox(width: 8),
+                  ElevatedButton(onPressed: () => setState(() => showFloatingOrderDetails = false), style: ElevatedButton.styleFrom(backgroundColor: Colors.grey), child: const Text("CLOSE", style: TextStyle(color: Colors.white))),
+                ]),
+              ] else if (showRemainingBalanceInput) ...[
+                Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFFD6E4FF), Color(0xFFFFFFFF)]), borderRadius: BorderRadius.circular(12)),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Text("Enter Remaining Balance Payment", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF2E3A59))),
+                    const SizedBox(height: 6),
+                    TextField(
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(hintText: 'Amount paid now', filled: true, fillColor: Colors.white, border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)), contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8)),
+                      onSubmitted: (val) async {
+                        double paid = double.tryParse(val) ?? 0;
+                        await supabase.from('customized_orders').update({
+                          'remaining_balance': remainingBalance - paid,
+                          'payment_status': (remainingBalance - paid) <= 0 ? 'Paid' : 'Partial',
+                        }).eq('id', order['id']);
+                        if (mounted) setState(() {
+                          activeFloatingOrder!['remaining_balance'] = remainingBalance - paid;
+                          activeFloatingOrder!['payment_status'] = (remainingBalance - paid) <= 0 ? 'Paid' : 'Partial';
+                          showRemainingBalanceInput = false;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    Center(child: ElevatedButton(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please press Enter to save'), backgroundColor: Colors.orange)), style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00C853), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8)), child: const Text("SAVE BALANCE", style: TextStyle(color: Colors.white, fontSize: 13)))),
+                  ]),
                 ),
               ],
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "${activeFloatingOrder?['item'] ?? 'Order Details'}",
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF2E3A59),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () =>
-                            setState(() => showFloatingOrderDetails = false),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  if (isCandle) ...[
-                    const Text(
-                      "Details",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF2E3A59),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      readOnly: true,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        hintText: "Enter order info here.....",
-                        filled: true,
-                        fillColor: const Color(0xFFB0B8D0),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 12,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _formRow(
-                      "Downpayment",
-                      "Remaining Balance",
-                      readOnly: true,
-                    ),
-                    const SizedBox(height: 20),
-                  ] else if (isSouvenir) ...[
-                    _formRow("Name", "Event Date", readOnly: true),
-                    const SizedBox(height: 12),
-                    _formRow("Theme", "Occasion Type", readOnly: true),
-                    const SizedBox(height: 12),
-                    _formRow(
-                      "Down Payment",
-                      "Remaining Balance",
-                      readOnly: true,
-                    ),
-                    const SizedBox(height: 20),
-                  ] else if (isRefMagnet) ...[
-                    _formRow("Name", "Event Date", readOnly: true),
-                    const SizedBox(height: 12),
-                    _formRow("Theme", "Occasion Type", readOnly: true),
-                    const SizedBox(height: 12),
-                    _formRow("Reception Venue", "", readOnly: true),
-                    const SizedBox(height: 12),
-                    _buildTextArea(
-                      "Additional Details",
-                      "Enter any additional details here.....",
-                      readOnly: true,
-                    ),
-                    const SizedBox(height: 12),
-                    _formRow(
-                      "Down Payment",
-                      "Remaining Balance",
-                      readOnly: true,
-                    ),
-                    const SizedBox(height: 20),
-                  ] else if (isTshirtOrChipBag) ...[
-                    const Text(
-                      "Details",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF2E3A59),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      readOnly: true,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        hintText: "Enter details here.....",
-                        filled: true,
-                        fillColor: const Color(0xFFB0B8D0),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 12,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Downpayment",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2E3A59),
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              TextField(
-                                readOnly: true,
-                                decoration: InputDecoration(
-                                  hintText: "Amount",
-                                  filled: true,
-                                  fillColor: const Color(0xFFB0B8D0),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Remaining Balance",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2E3A59),
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              TextField(
-                                readOnly: true,
-                                decoration: InputDecoration(
-                                  hintText: "Amount",
-                                  filled: true,
-                                  fillColor: const Color(0xFFB0B8D0),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                  ] else if (isButtonBadge) ...[
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Name",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF2E3A59),
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        TextField(
-                          readOnly: true,
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: const Color(0xFFB0B8D0),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide.none,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Details",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF2E3A59),
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        TextField(
-                          readOnly: true,
-                          maxLines: 3,
-                          decoration: InputDecoration(
-                            hintText: "Enter details here.....",
-                            filled: true,
-                            fillColor: const Color(0xFFB0B8D0),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide.none,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Downpayment",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2E3A59),
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              TextField(
-                                readOnly: true,
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor: const Color(0xFFB0B8D0),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Remaining Balance",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2E3A59),
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              TextField(
-                                readOnly: true,
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor: const Color(0xFFB0B8D0),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                  ] else if (isButtonPin) ...[
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Name",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF2E3A59),
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        TextField(
-                          readOnly: true,
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: const Color(0xFFB0B8D0),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide.none,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Details",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF2E3A59),
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        TextField(
-                          readOnly: true,
-                          maxLines: 3,
-                          decoration: InputDecoration(
-                            hintText: "Enter details here.....",
-                            filled: true,
-                            fillColor: const Color(0xFFB0B8D0),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide.none,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Downpayment",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2E3A59),
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              TextField(
-                                readOnly: true,
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor: const Color(0xFFB0B8D0),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Remaining Balance",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2E3A59),
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              TextField(
-                                readOnly: true,
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor: const Color(0xFFB0B8D0),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                  ] else if (isPartyHat) ...[
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Name",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2E3A59),
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              TextField(
-                                readOnly: true,
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor: const Color(0xFFB0B8D0),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Theme",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2E3A59),
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              TextField(
-                                readOnly: true,
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor: const Color(0xFFB0B8D0),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Details",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF2E3A59),
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        TextField(
-                          readOnly: true,
-                          maxLines: 3,
-                          decoration: InputDecoration(
-                            hintText: "Enter details here.....",
-                            filled: true,
-                            fillColor: const Color(0xFFB0B8D0),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide.none,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Downpayment",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2E3A59),
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              TextField(
-                                readOnly: true,
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor: const Color(0xFFB0B8D0),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Remaining Balance",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2E3A59),
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              TextField(
-                                readOnly: true,
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor: const Color(0xFFB0B8D0),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                  ] else if (isJigsawPuzzle) ...[
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Theme",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF2E3A59),
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        TextField(
-                          readOnly: true,
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: const Color(0xFFB0B8D0),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide.none,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Details",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF2E3A59),
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        TextField(
-                          readOnly: true,
-                          maxLines: 3,
-                          decoration: InputDecoration(
-                            hintText: "Enter details here.....",
-                            filled: true,
-                            fillColor: const Color(0xFFB0B8D0),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide.none,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Downpayment",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2E3A59),
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              TextField(
-                                readOnly: true,
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor: const Color(0xFFB0B8D0),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Remaining Balance",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2E3A59),
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              TextField(
-                                readOnly: true,
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor: const Color(0xFFB0B8D0),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                  ] else if (isBanner) ...[
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Name",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF2E3A59),
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        TextField(
-                          readOnly: true,
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: const Color(0xFFB0B8D0),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide.none,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Details",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF2E3A59),
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        TextField(
-                          readOnly: true,
-                          maxLines: 3,
-                          decoration: InputDecoration(
-                            hintText: "Enter details here.....",
-                            filled: true,
-                            fillColor: const Color(0xFFB0B8D0),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide.none,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Downpayment",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2E3A59),
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              TextField(
-                                readOnly: true,
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor: const Color(0xFFB0B8D0),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Remaining Balance",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2E3A59),
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              TextField(
-                                readOnly: true,
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor: const Color(0xFFB0B8D0),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                  ] else if (isCalendarOrClock) ...[
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Name",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF2E3A59),
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        TextField(
-                          readOnly: true,
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: const Color(0xFFB0B8D0),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide.none,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Downpayment",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2E3A59),
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              TextField(
-                                readOnly: true,
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor: const Color(0xFFB0B8D0),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Remaining Balance",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2E3A59),
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              TextField(
-                                readOnly: true,
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor: const Color(0xFFB0B8D0),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                  ] else if (isHairBrush) ...[
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Name",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF2E3A59),
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        TextField(
-                          readOnly: true,
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: const Color(0xFFB0B8D0),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide.none,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Downpayment",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2E3A59),
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              TextField(
-                                readOnly: true,
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor: const Color(0xFFB0B8D0),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Remaining Balance",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2E3A59),
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              TextField(
-                                readOnly: true,
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor: const Color(0xFFB0B8D0),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                  ] else ...[
-                    _formRow("Name", "Event Date", readOnly: true),
-                    const SizedBox(height: 12),
-                    _formRow("Theme", "What Package", readOnly: true),
-                    const SizedBox(height: 12),
-                    _formRow("Reception Venue", "Church Venue", readOnly: true),
-                    const SizedBox(height: 12),
-                    _buildTextArea(
-                      "Additional Details",
-                      "Enter any additional details here.....",
-                      readOnly: true,
-                    ),
-                    const SizedBox(height: 12),
-                    _formRow(
-                      "Down Payment",
-                      "Remaining Balance",
-                      readOnly: true,
-                    ),
-                    const SizedBox(height: 20),
-                  ],
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              "Uploaded Images",
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF2E3A59),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Container(
-                              width: 60,
-                              height: 60,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFB0B8D0),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              "Input Remaining Balance?",
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF2E3A59),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Row(
-                              children: [
-                                ElevatedButton(
-                                  onPressed: () => setState(
-                                    () => showRemainingBalanceInput = true,
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF00C853),
-                                  ),
-                                  child: const Text(
-                                    "YES",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                ElevatedButton(
-                                  onPressed: () => setState(
-                                    () => showRemainingBalanceInput = false,
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red,
-                                  ),
-                                  child: const Text(
-                                    "NO",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (showRemainingBalanceInput) ...[
-                              const SizedBox(height: 15),
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFFD6E4FF),
-                                      Color(0xFFFFFFFF),
-                                    ],
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.2,
-                                      ),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      "Remaining Balance",
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF2E3A59),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Container(
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(6),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.1,
-                                            ),
-                                            blurRadius: 4,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ],
-                                      ),
-                                      child: const TextField(
-                                        decoration: InputDecoration(
-                                          border: InputBorder.none,
-                                          contentPadding: EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                          ),
-                                          hintText: '0.00',
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Center(
-                                      child: ElevatedButton(
-                                        onPressed: () {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('Balance Saved'),
-                                              backgroundColor: Color(
-                                                0xFF00C853,
-                                              ),
-                                            ),
-                                          );
-                                          setState(
-                                            () => showRemainingBalanceInput =
-                                                false,
-                                          );
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(
-                                            0xFF00C853,
-                                          ),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 40,
-                                            vertical: 10,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                          ),
-                                          elevation: 4,
-                                        ),
-                                        child: const Text(
-                                          "SAVE",
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+            ]),
           ),
         ),
-      ],
-    );
+      ),
+    ]);
+  }
+
+  Widget _readOnlyInput(String label, String value) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
+      const SizedBox(height: 3),
+      Container(width: double.infinity, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8), decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(8)),
+        child: Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
+    ]);
   }
 
   Widget _buildTopBar() {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white, width: 1),
-            ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  ...mainTabs
-                      .map(
-                        (tab) => Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: _buildTabChip(tab),
-                        ),
-                      ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Builder(
-                      builder: (context) => _buildMoreButton(context),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        GestureDetector(
-          onTap: () {
-            setState(() {
-              showTrackSaved = !showTrackSaved;
-              showFloatingOrderDetails = false;
-              _closeMoreMenu();
-            });
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            decoration: BoxDecoration(
-              color: showTrackSaved
-                  ? const Color(0xFF55A888)
-                  : const Color(0xFF373E4E),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text(
-              "Track Saved Orders",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
+    return Row(children: [
+      Expanded(child: Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6), decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white, width: 1)),
+        child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [
+          ...mainTabs.map((tab) => Padding(padding: const EdgeInsets.symmetric(horizontal: 3), child: _buildTabChip(tab))),
+          Padding(padding: const EdgeInsets.symmetric(horizontal: 3), child: Builder(builder: (context) => _buildMoreButton(context))),
+        ])),
+      )),
+      const SizedBox(width: 8),
+      GestureDetector(
+        onTap: () { setState(() { showTrackSaved = !showTrackSaved; showFloatingOrderDetails = false; _closeMoreMenu(); }); },
+        child: Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), decoration: BoxDecoration(color: showTrackSaved ? const Color(0xFF55A888) : const Color(0xFF373E4E), borderRadius: BorderRadius.circular(20)),
+          child: const Text("Track Saved Orders", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600))),
+      ),
+    ]);
   }
 
   Widget _buildMoreButton(BuildContext context) {
     bool isMoreActive = moreItems.contains(_activeItem);
-    return InkWell(
-      onTap: () => _toggleMoreMenu(context),
-      borderRadius: BorderRadius.circular(15),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 10,
-        ),
-        decoration: BoxDecoration(
-          color: isMoreActive ? const Color(0xFF373E4E) : Colors.transparent,
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              isMoreActive ? _activeItem : "More",
-              style: TextStyle(
-                color: isMoreActive ? Colors.white : Colors.black87,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(width: 4),
-            Icon(
-              isMoreDropdownOpen ? Icons.arrow_drop_up : Icons.arrow_drop_down,
-              color: isMoreActive ? Colors.white : Colors.black87,
-              size: 20,
-            ),
-          ],
-        ),
+    return InkWell(onTap: () => _toggleMoreMenu(context), borderRadius: BorderRadius.circular(15),
+      child: Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), decoration: BoxDecoration(color: isMoreActive ? const Color(0xFF373E4E) : Colors.transparent, borderRadius: BorderRadius.circular(15)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Text(isMoreActive ? _activeItem : "More", style: TextStyle(color: isMoreActive ? Colors.white : Colors.black87, fontWeight: FontWeight.w600, fontSize: 13)),
+          const SizedBox(width: 3),
+          Icon(isMoreDropdownOpen ? Icons.arrow_drop_up : Icons.arrow_drop_down, color: isMoreActive ? Colors.white : Colors.black87, size: 18),
+        ]),
       ),
     );
   }
 
   Widget _buildDropdownMenu() {
-    return Material(
-      elevation: 4,
-      borderRadius: BorderRadius.circular(12),
-      color: Colors.white,
-      child: Container(
-        width: 160,
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Material(elevation: 4, borderRadius: BorderRadius.circular(12), color: Colors.white,
+      child: Container(width: 150, padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
           children: moreItems.map((item) {
             bool isSelected = item == _activeItem;
-            return InkWell(
-              onTap: () => _selectItem(item),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected ? Colors.grey.shade300 : Colors.transparent,
-                ),
-                child: Text(
-                  item,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: const Color(0xFF2E3A59),
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  ),
-                ),
-              ),
-            );
+            return InkWell(onTap: () => _selectItem(item), child: Container(width: double.infinity, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: isSelected ? Colors.grey.shade300 : Colors.transparent),
+              child: Text(item, style: TextStyle(fontSize: 13, color: const Color(0xFF2E3A59), fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal)),
+            ));
           }).toList(),
         ),
       ),
@@ -2056,2628 +665,8 @@ class _CustomizedOrdersPageState extends State<CustomizedOrdersPages> {
 
   Widget _buildTabChip(String label) {
     bool isActive = _activeItem == label;
-    return GestureDetector(
-      onTap: () => _selectItem(label),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 10,
-        ),
-        decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF373E4E) : Colors.transparent,
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isActive ? Colors.white : Colors.black87,
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
-          ),
-        ),
-      ),
-    );
+    return GestureDetector(onTap: () => _selectItem(label), child: Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), decoration: BoxDecoration(color: isActive ? const Color(0xFF373E4E) : Colors.transparent, borderRadius: BorderRadius.circular(15)),
+      child: Center(child: Text(label, style: TextStyle(color: isActive ? Colors.white : Colors.black87, fontWeight: FontWeight.w600, fontSize: 13))),
+    ));
   }
-
-  Widget _buildFormView() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Custom Order: $_activeItem',
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2E3A59),
-              ),
-            ),
-            const SizedBox(height: 20),
-            _getFormForItem(_activeItem),
-            // REMOVED: The conditional downpayment row that was appearing under save button for some items
-            // if (_activeItem != 'Packages' && ...) ...[
-            //   const SizedBox(height: 20),
-            //   _formRow("Downpayment", "Remaining Balance"),
-            // ],
-            const SizedBox(height: 30),
-            // REMOVED: The conditional bottom section to prevent duplication if forms are self-contained
-            // if (_activeItem != 'Packages' && ...) _buildBottomSection(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomSection() {
-    int maxImages = 1;
-    if (_activeItem == 'Packages' ||
-        _activeItem == 'Invitation' ||
-        _activeItem == 'Ref Magnet' ||
-        _activeItem == 'T-shirt' ||
-        _activeItem == 'Chip Bag' ||
-        _activeItem == 'Party Hat' ||
-        _activeItem == 'Jigsaw Puzzle') {
-      maxImages = 5;
-    } else if (_activeItem == 'Clock') {
-      maxImages = 13;
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Upload Image",
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2E3A59),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Wrap(
-                    spacing: 15,
-                    runSpacing: 10,
-                    children: List.generate(maxImages > 5 ? 5 : maxImages, (
-                      index,
-                    ) {
-                      return Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: CustomPaint(
-                          painter: DashedBorderPainter(),
-                          child: const Center(
-                            child: Icon(
-                              Icons.add,
-                              color: Colors.black,
-                              size: 30,
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    "Choose Files  No file chosen",
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 20),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  savedOrders.add({
-                    'item': _activeItem,
-                    'type': moreItems.contains(_activeItem)
-                        ? 'More Item'
-                        : _activeItem,
-                    'commissioned': 'Staff Name',
-                    'branch': 'CAMPO',
-                    'downpayment': '₱ 0.00',
-                  });
-                  showTrackSaved = true;
-                });
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00C853),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 40,
-                  vertical: 16,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                "SAVE",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _getFormForItem(String item) {
-    if (item == 'Packages' || item == 'Invitation') {
-      return _buildPackagesOrInvitationMainForm();
-    }
-    if (item == 'Souvenir') {
-      return _buildSouvenirMainForm();
-    }
-    if (item == 'Candle') return _buildCandleForm();
-    if (item == 'T-shirt') return _buildTshirtForm();
-    if (item == 'Chip Bag') return _buildChipBagForm();
-    if (item == 'Button Badge') return _buildButtonBadgeForm();
-    if (item == 'Button Pin') return _buildButtonPinForm();
-    if (item == 'Party Hat') return _buildPartyHatForm();
-    if (item == 'Jigsaw Puzzle') return _buildJigsawPuzzleForm();
-    if (item == 'Banner') return _buildBannerForm();
-    if (item == 'Calendar') return _buildCalendarForm();
-    if (item == 'Hair Brush') return _buildHairBrushForm();
-    if (item == 'Clock') return _buildClockForm();
-    if (item == 'Ref Magnet') return _buildRefMagnetForm();
-    return const SizedBox();
-  }
-
-  Widget _buildPackagesOrInvitationMainForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _formRow("Name", "Event Date"),
-        const SizedBox(height: 12),
-        _formRow("Theme", "What Package"),
-        const SizedBox(height: 12),
-        _formRow("Reception Venue", "Church Venue"),
-        const SizedBox(height: 12),
-        _buildTextArea(
-          "Additional Details",
-          "Enter any additional details here.....",
-        ),
-        const SizedBox(height: 12),
-        _buildTextArea(
-          "Additional Custom Order",
-          "Enter any additional custom order here.....",
-        ),
-        const SizedBox(height: 20),
-        // REMOVED: Down Payment and Balance after Downpayment Row
-        /*
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Down Payment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Balance after Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        */
-        const SizedBox(height: 20),
-        const Text(
-          "Upload Image",
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2E3A59),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 15,
-          runSpacing: 10,
-          children: List.generate(4, (index) {
-            return Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: CustomPaint(
-                painter: DashedBorderPainter(),
-                child: const Center(
-                  child: Icon(Icons.add, color: Colors.black, size: 30),
-                ),
-              ),
-            );
-          }),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          "Choose Files",
-          style: TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-        const SizedBox(height: 30),
-        Center(
-          child: ElevatedButton(
-            onPressed: () {
-              setState(() {
-                savedOrders.add({
-                  'item': _activeItem,
-                  'type': moreItems.contains(_activeItem)
-                      ? 'More Item'
-                      : _activeItem,
-                  'commissioned': 'Staff Name',
-                  'branch': 'CAMPO',
-                  'downpayment': '₱ 0.00',
-                });
-                showTrackSaved = true;
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00C853),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 40,
-                vertical: 16,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              "SAVE",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSouvenirMainForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _formRow("Name", "Event Date"),
-        const SizedBox(height: 12),
-        _formRow("Theme", "Occasion Type"),
-        const SizedBox(height: 20),
-        // REMOVED: Down Payment and Balance after Downpayment Row
-        /*
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Down Payment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Balance after Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        */
-        const SizedBox(height: 20),
-        _buildTextArea(
-          "Additional Custom Order",
-          "Enter any additional custom order here.....",
-        ),
-        const SizedBox(height: 20),
-        const Text(
-          "Upload Image",
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2E3A59),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: CustomPaint(
-            painter: DashedBorderPainter(),
-            child: const Center(
-              child: Icon(Icons.add, color: Colors.black, size: 30),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          "Choose Files No file chosen",
-          style: TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-        const SizedBox(height: 30),
-        Center(
-          child: ElevatedButton(
-            onPressed: () {
-              setState(() {
-                savedOrders.add({
-                  'item': _activeItem,
-                  'type': moreItems.contains(_activeItem)
-                      ? 'More Item'
-                      : _activeItem,
-                  'commissioned': 'Staff Name',
-                  'branch': 'CAMPO',
-                  'downpayment': '₱ 0.00',
-                });
-                showTrackSaved = true;
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00C853),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 40,
-                vertical: 16,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              "SAVE",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCandleForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildTextArea("Details", "Enter details here....."),
-        const SizedBox(height: 12),
-        _buildTextArea(
-          "Additional Custom Order",
-          "Enter any additional custom order here.....",
-        ),
-        const SizedBox(height: 20),
-        // REMOVED: Downpayment and Balance after Downpayment Row
-        /*
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Balance after Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        */
-        const SizedBox(height: 30),
-        Center(
-          child: ElevatedButton(
-            onPressed: () {
-              setState(() {
-                savedOrders.add({
-                  'item': _activeItem,
-                  'commissioned': 'Staff Name',
-                  'branch': 'CAMPO',
-                  'downpayment': '₱ 0.00',
-                  'type': 'Candle',
-                });
-                showTrackSaved = true;
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00C853),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 40,
-                vertical: 16,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              "SAVE",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTshirtForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildTextArea("Details", "Enter details here....."),
-        const SizedBox(height: 12),
-        _buildTextArea(
-          "Additional Custom Order",
-          "Enter any additional custom order here.....",
-        ),
-        const SizedBox(height: 20),
-        // REMOVED: Downpayment and Balance after Downpayment Row
-        /*
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Balance after Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        */
-        const SizedBox(height: 20),
-        const Text(
-          "Upload Image",
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2E3A59),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 15,
-          runSpacing: 10,
-          children: List.generate(5, (index) {
-            return Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: CustomPaint(
-                painter: DashedBorderPainter(),
-                child: const Center(
-                  child: Icon(Icons.add, color: Colors.black, size: 30),
-                ),
-              ),
-            );
-          }),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          "Choose Files No file chosen",
-          style: TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-        const SizedBox(height: 30),
-        Center(
-          child: ElevatedButton(
-            onPressed: () {
-              setState(() {
-                savedOrders.add({
-                  'item': _activeItem,
-                  'commissioned': 'Staff Name',
-                  'branch': 'CAMPO',
-                  'downpayment': '₱ 0.00',
-                  'type': 'T-shirt',
-                });
-                showTrackSaved = true;
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00C853),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 40,
-                vertical: 16,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              "SAVE",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildChipBagForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildTextArea("Details", "Enter details here....."),
-        const SizedBox(height: 12),
-        _buildTextArea(
-          "Additional Custom Order",
-          "Enter any additional custom order here.....",
-        ),
-        const SizedBox(height: 20),
-        // REMOVED: Downpayment and Balance after Downpayment Row
-        /*
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Balance after Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        */
-        const SizedBox(height: 20),
-        const Text(
-          "Upload Image",
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2E3A59),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 15,
-          runSpacing: 10,
-          children: List.generate(5, (index) {
-            return Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: CustomPaint(
-                painter: DashedBorderPainter(),
-                child: const Center(
-                  child: Icon(Icons.add, color: Colors.black, size: 30),
-                ),
-              ),
-            );
-          }),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          "Choose Files No file chosen",
-          style: TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-        const SizedBox(height: 30),
-        Center(
-          child: ElevatedButton(
-            onPressed: () {
-              setState(() {
-                savedOrders.add({
-                  'item': _activeItem,
-                  'commissioned': 'Staff Name',
-                  'branch': 'CAMPO',
-                  'downpayment': '₱ 0.00',
-                  'type': 'Chip Bag',
-                });
-                showTrackSaved = true;
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00C853),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 40,
-                vertical: 16,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              "SAVE",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildButtonBadgeForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildInput("Name"),
-        const SizedBox(height: 12),
-        _buildTextArea(
-          "Additional Custom Order",
-          "Enter any additional custom order here.....",
-        ),
-        const SizedBox(height: 20),
-        // REMOVED: Downpayment and Balance after Downpayment Row
-        /*
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Balance after Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        */
-        const SizedBox(height: 20),
-        const Text(
-          "Upload Image",
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2E3A59),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: CustomPaint(
-            painter: DashedBorderPainter(),
-            child: const Center(
-              child: Icon(Icons.add, color: Colors.black, size: 30),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          "Choose Files No file chosen",
-          style: TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-        const SizedBox(height: 30),
-        Center(
-          child: ElevatedButton(
-            onPressed: () {
-              setState(() {
-                savedOrders.add({
-                  'item': _activeItem,
-                  'commissioned': 'Staff Name',
-                  'branch': 'CAMPO',
-                  'downpayment': '₱ 0.00',
-                  'type': 'Button Badge',
-                });
-                showTrackSaved = true;
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00C853),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 40,
-                vertical: 16,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              "SAVE",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildButtonPinForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildInput("Name"),
-        const SizedBox(height: 12),
-        _buildTextArea(
-          "Additional Details",
-          "Enter any additional details here.....",
-        ),
-        const SizedBox(height: 12),
-        _buildTextArea(
-          "Additional Custom Order",
-          "Enter any additional custom order here.....",
-        ),
-        const SizedBox(height: 20),
-        // REMOVED: Downpayment and Balance after Downpayment Row
-        /*
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Balance after Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        */
-        const SizedBox(height: 20),
-        const Text(
-          "Upload Image",
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2E3A59),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: CustomPaint(
-            painter: DashedBorderPainter(),
-            child: const Center(
-              child: Icon(Icons.add, color: Colors.black, size: 30),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          "Choose Files No file chosen",
-          style: TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-        const SizedBox(height: 30),
-        Center(
-          child: ElevatedButton(
-            onPressed: () {
-              setState(() {
-                savedOrders.add({
-                  'item': _activeItem,
-                  'commissioned': 'Staff Name',
-                  'branch': 'CAMPO',
-                  'downpayment': '₱ 0.00',
-                  'type': 'Button Pin',
-                });
-                showTrackSaved = true;
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00C853),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 40,
-                vertical: 16,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              "SAVE",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPartyHatForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(child: _buildInput("Name")),
-            const SizedBox(width: 12),
-            Expanded(child: _buildInput("Theme")),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _buildTextArea(
-          "Additional Details",
-          "Enter any additional details here.....",
-        ),
-        const SizedBox(height: 12),
-        _buildTextArea(
-          "Additional Custom Order",
-          "Enter any additional custom order here.....",
-        ),
-        const SizedBox(height: 20),
-        // REMOVED: Downpayment and Balance after Downpayment Row
-        /*
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Balance after Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        */
-        const SizedBox(height: 20),
-        const Text(
-          "Upload Image",
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2E3A59),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 15,
-          runSpacing: 10,
-          children: List.generate(5, (index) {
-            return Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: CustomPaint(
-                painter: DashedBorderPainter(),
-                child: const Center(
-                  child: Icon(Icons.add, color: Colors.black, size: 30),
-                ),
-              ),
-            );
-          }),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          "Choose Files No file chosen",
-          style: TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-        const SizedBox(height: 30),
-        Center(
-          child: ElevatedButton(
-            onPressed: () {
-              setState(() {
-                savedOrders.add({
-                  'item': _activeItem,
-                  'commissioned': 'Staff Name',
-                  'branch': 'CAMPO',
-                  'downpayment': '₱ 0.00',
-                  'type': 'Party Hat',
-                });
-                showTrackSaved = true;
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00C853),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 40,
-                vertical: 16,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              "SAVE",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildJigsawPuzzleForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _formRow("Theme", "Details"),
-        const SizedBox(height: 12),
-        _buildTextArea(
-          "Additional Custom Order",
-          "Enter any additional custom order here.....",
-        ),
-        const SizedBox(height: 20),
-        // REMOVED: Downpayment and Balance after Downpayment Row
-        /*
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Balance after Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        */
-        const SizedBox(height: 20),
-        const Text(
-          "Upload Image",
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2E3A59),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 15,
-          runSpacing: 10,
-          children: List.generate(5, (index) {
-            return Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: CustomPaint(
-                painter: DashedBorderPainter(),
-                child: const Center(
-                  child: Icon(Icons.add, color: Colors.black, size: 30),
-                ),
-              ),
-            );
-          }),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          "Choose Files No file chosen",
-          style: TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-        const SizedBox(height: 30),
-        Center(
-          child: ElevatedButton(
-            onPressed: () {
-              setState(() {
-                savedOrders.add({
-                  'item': _activeItem,
-                  'commissioned': 'Staff Name',
-                  'branch': 'CAMPO',
-                  'downpayment': '₱ 0.00',
-                  'type': 'Jigsaw Puzzle',
-                });
-                showTrackSaved = true;
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00C853),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 40,
-                vertical: 16,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              "SAVE",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBannerForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _formRow("Theme", "Details"),
-        const SizedBox(height: 12),
-        _buildTextArea(
-          "Additional Custom Order",
-          "Enter any additional custom order here.....",
-        ),
-        const SizedBox(height: 20),
-        // REMOVED: Downpayment and Balance after Downpayment Row
-        /*
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Balance after Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        */
-        const SizedBox(height: 20),
-        const Text(
-          "Upload Image",
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2E3A59),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 15,
-          runSpacing: 10,
-          children: List.generate(5, (index) {
-            return Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: CustomPaint(
-                painter: DashedBorderPainter(),
-                child: const Center(
-                  child: Icon(Icons.add, color: Colors.black, size: 30),
-                ),
-              ),
-            );
-          }),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          "Choose Files No file chosen",
-          style: TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-        const SizedBox(height: 30),
-        Center(
-          child: ElevatedButton(
-            onPressed: () {
-              setState(() {
-                savedOrders.add({
-                  'item': _activeItem,
-                  'commissioned': 'Staff Name',
-                  'branch': 'CAMPO',
-                  'downpayment': '₱ 0.00',
-                  'type': 'Banner',
-                });
-                showTrackSaved = true;
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00C853),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 40,
-                vertical: 16,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              "SAVE",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCalendarForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(child: _buildInput("Name")),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildTextArea(
-                "Additional Custom Order",
-                "Enter any additional custom order here.....",
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _buildTextArea(
-          "Additional Details",
-          "Enter any additional details here.....",
-        ),
-        const SizedBox(height: 20),
-        // REMOVED: Downpayment and Balance after Downpayment Row
-        /*
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Balance after Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        */
-        const SizedBox(height: 20),
-        const Text(
-          "Upload Image",
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2E3A59),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: CustomPaint(
-            painter: DashedBorderPainter(),
-            child: const Center(
-              child: Icon(Icons.add, color: Colors.black, size: 30),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          "Choose Files No file chosen",
-          style: TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-        const SizedBox(height: 30),
-        Center(
-          child: ElevatedButton(
-            onPressed: () {
-              setState(() {
-                savedOrders.add({
-                  'item': _activeItem,
-                  'commissioned': 'Staff Name',
-                  'branch': 'CAMPO',
-                  'downpayment': '₱ 0.00',
-                  'type': 'Calendar',
-                });
-                showTrackSaved = true;
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00C853),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 40,
-                vertical: 16,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              "SAVE",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHairBrushForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(child: _buildInput("Name")),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildTextArea(
-                "Additional Custom Order",
-                "Enter any additional custom order here.....",
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        // REMOVED: Downpayment and Balance after Downpayment Row
-        /*
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Balance after Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        */
-        const SizedBox(height: 20),
-        const Text(
-          "Upload Image",
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2E3A59),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: CustomPaint(
-            painter: DashedBorderPainter(),
-            child: const Center(
-              child: Icon(Icons.add, color: Colors.black, size: 30),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          "Choose Files No file chosen",
-          style: TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-        const SizedBox(height: 30),
-        Center(
-          child: ElevatedButton(
-            onPressed: () {
-              setState(() {
-                savedOrders.add({
-                  'item': _activeItem,
-                  'commissioned': 'Staff Name',
-                  'branch': 'CAMPO',
-                  'downpayment': '₱ 0.00',
-                  'type': 'Hair Brush',
-                });
-                showTrackSaved = true;
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00C853),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 40,
-                vertical: 16,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              "SAVE",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildClockForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(child: _buildInput("Name")),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildTextArea(
-                "Additional Custom Order",
-                "Enter any additional custom order here.....",
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        // REMOVED: Downpayment and Balance after Downpayment Row
-        /*
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Balance after Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        */
-        const SizedBox(height: 20),
-        const Text(
-          "Upload Image",
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2E3A59),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 15,
-          runSpacing: 10,
-          children: List.generate(13, (index) {
-            return Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: CustomPaint(
-                painter: DashedBorderPainter(),
-                child: const Center(
-                  child: Icon(Icons.add, color: Colors.black, size: 30),
-                ),
-              ),
-            );
-          }),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          "Choose Files No file chosen",
-          style: TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-        const SizedBox(height: 30),
-        Center(
-          child: ElevatedButton(
-            onPressed: () {
-              setState(() {
-                savedOrders.add({
-                  'item': _activeItem,
-                  'commissioned': 'Staff Name',
-                  'branch': 'CAMPO',
-                  'downpayment': '₱ 0.00',
-                  'type': 'Clock',
-                });
-                showTrackSaved = true;
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00C853),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 40,
-                vertical: 16,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              "SAVE",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRefMagnetForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _formRow("Name", "Event Date"),
-        const SizedBox(height: 12),
-        _formRow("Theme", "Occasion Type"),
-        const SizedBox(height: 12),
-        _buildInput("Reception Venue"),
-        const SizedBox(height: 12),
-        _buildTextArea(
-          "Additional Details",
-          "Enter any additional details here.....",
-        ),
-        const SizedBox(height: 12),
-        _buildTextArea(
-          "Additional Custom Order",
-          "Enter any additional custom order here.....",
-        ),
-        const SizedBox(height: 20),
-        // REMOVED: Down Payment and Balance after Downpayment Row
-        /*
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Down Payment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Balance after Downpayment",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Amount",
-                      filled: true,
-                      fillColor: const Color(0xFFB0B8D0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        */
-        const SizedBox(height: 20),
-        const Text(
-          "Upload Image",
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2E3A59),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 15,
-          runSpacing: 10,
-          children: List.generate(5, (index) {
-            return Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: CustomPaint(
-                painter: DashedBorderPainter(),
-                child: const Center(
-                  child: Icon(Icons.add, color: Colors.black, size: 30),
-                ),
-              ),
-            );
-          }),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          "Choose Files No file chosen",
-          style: TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-        const SizedBox(height: 30),
-        Center(
-          child: ElevatedButton(
-            onPressed: () {
-              setState(() {
-                savedOrders.add({
-                  'item': _activeItem,
-                  'commissioned': 'Staff Name',
-                  'branch': 'CAMPO',
-                  'downpayment': '₱ 0.00',
-                  'type': 'Ref Magnet',
-                });
-                showTrackSaved = true;
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00C853),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 40,
-                vertical: 16,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              "SAVE",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _formRow(String label1, String label2, {TextEditingController? controller1, TextEditingController? controller2, bool readOnly = false}) {
-    return Row(
-      children: [
-        Expanded(child: _buildInput(label1, controller: controller1, readOnly: readOnly)),
-        const SizedBox(width: 12),
-        Expanded(child: _buildInput(label2, controller: controller2, readOnly: readOnly)),
-      ],
-    );
-  }
-
-  Widget _buildInput(String label, {TextEditingController? controller, bool readOnly = false}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59)),
-        ),
-        const SizedBox(height: 5),
-        TextField(
-          controller: controller,
-          readOnly: readOnly,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: readOnly ? Colors.grey[300] : const Color(0xFFB0B8D0),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTextArea(String label, String hint, {TextEditingController? controller, bool readOnly = false}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E3A59))),
-        const SizedBox(height: 5),
-        TextField(
-          controller: controller,
-          readOnly: readOnly,
-          maxLines: 3,
-          decoration: InputDecoration(
-            hintText: hint,
-            filled: true,
-            fillColor: readOnly ? Colors.grey[300] : const Color(0xFFB0B8D0),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTrackSavedView() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-            decoration: const BoxDecoration(
-              color: Color(0xFF4B5580),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-              ),
-            ),
-            child: Row(
-              children: const [
-                Expanded(
-                  child: Text(
-                    "Item",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    "Commissioned by",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    "Shop Branch",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    "Downpayment",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Center(
-                    child: Text(
-                      "Detailed Information",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: savedOrders.length,
-              itemBuilder: (context, index) {
-                final order = savedOrders[index];
-                return Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: index % 2 == 0
-                        ? Colors.white
-                        : const Color(0xFFE8F0FE),
-                    border: Border(
-                      bottom: BorderSide(
-                        color: const Color(0xFFB0C4DE),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          order['item']!,
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                      ),
-                      Expanded(child: Text(order['commissioned']!)),
-                      Expanded(child: Text(order['branch']!)),
-                      Expanded(child: Text(order['downpayment']!)),
-                      Expanded(
-                        child: Center(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              if (order['item'] == 'Package 1' ||
-                                  order['item'] == 'Invitation' ||
-                                  order['item'] == 'Souvenir' ||
-                                  order['item'] == 'Candle' ||
-                                  order['item'] == 'Ref Magnet' ||
-                                  order['item'] == 'T-shirt' ||
-                                  order['item'] == 'Chip Bag' ||
-                                  order['item'] == 'Button Badge' ||
-                                  order['item'] == 'Button Pin' ||
-                                  order['item'] == 'Party Hat' ||
-                                  order['item'] == 'Jigsaw Puzzle' ||
-                                  order['item'] == 'Banner' ||
-                                  order['item'] == 'Calendar' ||
-                                  order['item'] == 'Clock' ||
-                                  order['item'] == 'Hair Brush') {
-                                setState(() {
-                                  showFloatingOrderDetails = true;
-                                  activeFloatingOrder = order;
-                                  showRemainingBalanceInput = false;
-                                });
-                              } else {
-                                setState(() {
-                                  showTrackSaved = false;
-                                  _activeItem = order['type'];
-                                });
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF00C853),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                            ),
-                            child: const Text(
-                              "VIEW",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class DashedBorderPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.grey
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-    final path = Path();
-    final double dashWidth = 5;
-    final double dashSpace = 3;
-    double currentX = 0;
-    double currentY = 0;
-    while (currentX < size.width) {
-      path.moveTo(currentX, 0);
-      currentX = currentX + dashWidth < size.width
-          ? currentX + dashWidth
-          : size.width;
-      path.lineTo(currentX, 0);
-      currentX += dashSpace;
-    }
-    currentY = 0;
-    while (currentY < size.height) {
-      path.moveTo(size.width, currentY);
-      currentY = currentY + dashWidth < size.height
-          ? currentY + dashWidth
-          : size.height;
-      path.lineTo(size.width, currentY);
-      currentY += dashSpace;
-    }
-    currentX = size.width;
-    while (currentX > 0) {
-      path.moveTo(currentX, size.height);
-      currentX = currentX - dashWidth > 0 ? currentX - dashWidth : 0;
-      path.lineTo(currentX, size.height);
-      currentX -= dashSpace;
-    }
-    currentY = size.height;
-    while (currentY > 0) {
-      path.moveTo(0, currentY);
-      currentY = currentY - dashWidth > 0 ? currentY - dashWidth : 0;
-      path.lineTo(0, currentY);
-      currentY -= dashSpace;
-    }
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
