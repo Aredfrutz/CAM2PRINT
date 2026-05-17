@@ -147,6 +147,7 @@ class _SalaryPageState extends State<SalaryPage> with SingleTickerProviderStateM
   bool _selectedIsFullTime = false;
   bool _isLoadingStaff = true;
   late TabController tabController;
+  RealtimeChannel? _salarySubscription;
 
   // ✅ ADD THIS METHOD to fetch staff from Supabase
   Future<void> _fetchStaffFromSupabase() async {
@@ -163,6 +164,10 @@ class _SalaryPageState extends State<SalaryPage> with SingleTickerProviderStateM
           _selectedStaffId = _staffList.first['id'];
           _selectedStaffName = _staffList.first['full_name'] ?? 'Unknown';
           _selectedIsFullTime = _staffList.first['employment_status'] == 'Full Time';
+
+          // Fetch their latest salary data and start real-time subscription
+          _fetchLatestSalary(_selectedStaffId!);
+          _subscribeToSalaryChanges(_selectedStaffId!);
         }
       });
     } catch (e) {
@@ -171,6 +176,164 @@ class _SalaryPageState extends State<SalaryPage> with SingleTickerProviderStateM
         _isLoadingStaff = false;
         _selectedStaffName = 'Error loading staff';
       });
+    }
+  }
+
+  // ✅ FETCH latest salary data for a staff member from the database
+  Future<void> _fetchLatestSalary(String staffId) async {
+    try {
+      final supabase = Supabase.instance.client;
+      final response = await supabase
+          .from('salary_records')
+          .select()
+          .eq('staff_id', staffId)
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      if (response != null && mounted) {
+        setState(() {
+          TSPrintValue = (response['sales_printing'] as num?) ?? 0;
+          TSXeroxValue = (response['sales_photocopy'] as num?) ?? 0;
+          TSSuppliesValue = (response['sales_supplies'] as num?) ?? 0;
+          TSPartyValue = (response['sales_party'] as num?) ?? 0;
+          CAmountValue = (response['commission_amount'] as num?) ?? 0;
+          CAdvanceValue = (response['cash_advance'] as num?) ?? 0;
+          DViolationsValue = (response['deductions_violations'] as num?) ?? 0;
+          DPhilHealthValue = (response['deductions_philhealth'] as num?) ?? 0;
+          DSSSValue = (response['deductions_sss'] as num?) ?? 0;
+          LDeductionValue = (response['deductions_late'] as num?) ?? 0;
+
+          TSPrintPercentageValue = (response['printing_percentage'] as num?) ?? 100;
+          TSXeroxPercentageValue = (response['photocopy_percentage'] as num?) ?? 100;
+          TSSuppliesPercentageValue = (response['supplies_percentage'] as num?) ?? 100;
+          TSPartyPercentageValue = (response['party_percentage'] as num?) ?? 100;
+
+          final formatCurrency = NumberFormat.decimalPatternDigits(decimalDigits: 2);
+          
+          TSPrintController.text = formatCurrency.format(TSPrintValue);
+          TSXeroxController.text = formatCurrency.format(TSXeroxValue);
+          TSSuppliesController.text = formatCurrency.format(TSSuppliesValue);
+          TSPartyController.text = formatCurrency.format(TSPartyValue);
+          CAmountController.text = formatCurrency.format(CAmountValue);
+          DViolationsController.text = formatCurrency.format(DViolationsValue);
+          DPhilHealthController.text = formatCurrency.format(DPhilHealthValue);
+          DSSSController.text = formatCurrency.format(DSSSValue);
+          LDeductionController.text = formatCurrency.format(LDeductionValue);
+          CAdvanceController.text = formatCurrency.format(CAdvanceValue);
+
+          TSPrintPercentageController.text = TSPrintPercentageValue.toStringAsFixed(0);
+          TSXeroxPercentageController.text = TSXeroxPercentageValue.toStringAsFixed(0);
+          TSSuppliesPercentageController.text = TSSuppliesPercentageValue.toStringAsFixed(0);
+          TSPartyPercentageController.text = TSPartyPercentageValue.toStringAsFixed(0);
+
+          NRemindersController.text = (response['notes'] as String?) ?? '';
+          NRemindersValue = NRemindersController.text;
+
+          formula();
+        });
+      } else if (mounted) {
+        resetTextFields(); // Reset to default 0s if no records are found
+      }
+    } catch (e) {
+      debugPrint('Error fetching latest salary: $e');
+      if (mounted) resetTextFields();
+    }
+  }
+
+  // ✅ SUBSCRIBE to real-time changes
+  void _subscribeToSalaryChanges(String staffId) {
+    _salarySubscription?.unsubscribe();
+    
+    _salarySubscription = Supabase.instance.client
+        .channel('public:salary_records:staff_$staffId')
+        .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'salary_records',
+            filter: PostgresChangeFilter(
+              type: PostgresChangeFilterType.eq,
+              column: 'staff_id',
+              value: staffId,
+            ),
+            callback: (payload) {
+              if (mounted) _fetchLatestSalary(staffId);
+            });
+            
+    _salarySubscription?.subscribe();
+  }
+
+  // ✅ ADD THIS METHOD to save calculated salary to Supabase
+  Future<void> _saveSalaryToDatabase() async {
+    if (_selectedStaffId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a staff member first.')),
+      );
+      return;
+    }
+
+    // Get the current date, then find the difference in days to get to Friday (weekday 5)
+    DateTime now = DateTime.now();
+    int daysUntilFriday = DateTime.friday - now.weekday;
+    DateTime fridayOfThisWeek = now.add(Duration(days: daysUntilFriday));
+    String currentPayPeriod = DateFormat('yyyy-MM-dd').format(fridayOfThisWeek);
+
+    try {
+      final supabase = Supabase.instance.client;
+      
+      final Map<String, dynamic> dataToSave = {
+        'full_name': _selectedStaffName,
+        'sales_printing': TSPrintValue,
+        'sales_photocopy': TSXeroxValue,
+        'sales_supplies': TSSuppliesValue,
+        'sales_party': TSPartyValue,
+        'commission_amount': CAmountValue,
+        'cash_advance': CAdvanceValue,
+        'deductions_violations': DViolationsValue,
+        'deductions_philhealth': DPhilHealthValue,
+        'deductions_sss': DSSSValue,
+        'deductions_late': LDeductionValue,
+        'basic_pay': BasicPay,
+        'total_salary': SalaryComputed,
+        'notes': NRemindersValue,
+        'updated_at': DateTime.now().toIso8601String(),
+        'printing_percentage': TSPrintPercentageValue,
+        'photocopy_percentage': TSXeroxPercentageValue,
+        'supplies_percentage': TSSuppliesPercentageValue,
+        'party_percentage': TSPartyPercentageValue,
+      };
+
+      // Check if a record for this staff and pay period already exists
+      final existingRecord = await supabase
+          .from('salary_records')
+          .select('id')
+          .eq('staff_id', _selectedStaffId!)
+          .eq('pay_period', currentPayPeriod)
+          .maybeSingle();
+
+      if (existingRecord != null) {
+        // Update the existing record
+        await supabase.from('salary_records').update(dataToSave).eq('id', existingRecord['id']);
+      } else {
+        // Insert a new record
+        dataToSave['staff_id'] = _selectedStaffId!;
+        dataToSave['pay_period'] = currentPayPeriod;
+        dataToSave['created_at'] = DateTime.now().toIso8601String();
+        await supabase.from('salary_records').insert(dataToSave);
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Salary saved successfully!')),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error saving salary: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving salary: $e')),
+        );
+      }
     }
   }
 
@@ -202,6 +365,13 @@ class _SalaryPageState extends State<SalaryPage> with SingleTickerProviderStateM
     TSXeroxPercentageController.addListener(TSXeroxPercentageState);
     TSSuppliesPercentageController.addListener(TSSuppliesPercentageState);
     TSPartyPercentageController.addListener(TSPartyPercentageState);
+  }
+
+  @override
+  void dispose() {
+    _salarySubscription?.unsubscribe();
+    tabController.dispose();
+    super.dispose();
   }
 
   // ✅ ADMIN NAVIGATION
@@ -373,12 +543,9 @@ class _SalaryPageState extends State<SalaryPage> with SingleTickerProviderStateM
           extentOffset: TSPrintText.length,
         ),
       );
-      TSPrintValue = CurrencyFormatter.getUnformattedValue();
+      TSPrintValue = num.tryParse(TSPrintController.text.replaceAll(',', '')) ?? 0;
       if (TSPrintController.text == "") {
         TSPrintController.text = "0.00";
-      } else if (TSPrintController.text ==
-          TSPrintInitialValue.toStringAsFixed(2)) {
-        TSPrintValue = TSPrintInitialValue;
       }
       formula();
     });
@@ -393,12 +560,9 @@ class _SalaryPageState extends State<SalaryPage> with SingleTickerProviderStateM
           extentOffset: TSXeroxText.length,
         ),
       );
-      TSXeroxValue = CurrencyFormatter.getUnformattedValue();
+      TSXeroxValue = num.tryParse(TSXeroxController.text.replaceAll(',', '')) ?? 0;
       if (TSXeroxController.text == "") {
         TSXeroxController.text = "0.00";
-      } else if (TSXeroxController.text ==
-          TSXeroxInitialValue.toStringAsFixed(2)) {
-        TSXeroxValue = TSXeroxInitialValue;
       }
       formula();
     });
@@ -413,12 +577,9 @@ class _SalaryPageState extends State<SalaryPage> with SingleTickerProviderStateM
           extentOffset: TSSuppliesText.length,
         ),
       );
-      TSSuppliesValue = CurrencyFormatter.getUnformattedValue();
+      TSSuppliesValue = num.tryParse(TSSuppliesController.text.replaceAll(',', '')) ?? 0;
       if (TSSuppliesController.text == "") {
         TSSuppliesController.text = "0.00";
-      } else if (TSSuppliesController.text ==
-          TSSuppliesInitialValue.toStringAsFixed(2)) {
-        TSSuppliesValue = TSSuppliesInitialValue;
       }
       formula();
     });
@@ -433,12 +594,9 @@ class _SalaryPageState extends State<SalaryPage> with SingleTickerProviderStateM
           extentOffset: TSPartyText.length,
         ),
       );
-      TSPartyValue = CurrencyFormatter.getUnformattedValue();
+      TSPartyValue = num.tryParse(TSPartyController.text.replaceAll(',', '')) ?? 0;
       if (TSPartyController.text == "") {
         TSPartyController.text = "0.00";
-      } else if (TSPartyController.text ==
-          TSSuppliesInitialValue.toStringAsFixed(2)) {
-        TSPartyValue = TSPartyInitialValue;
       }
       formula();
     });
@@ -453,12 +611,9 @@ class _SalaryPageState extends State<SalaryPage> with SingleTickerProviderStateM
           extentOffset: CAmountText.length,
         ),
       );
-      CAmountValue = CurrencyFormatter.getUnformattedValue();
+      CAmountValue = num.tryParse(CAmountController.text.replaceAll(',', '')) ?? 0;
       if (CAmountController.text == "") {
         CAmountController.text = "0.00";
-      } else if (CAmountController.text ==
-          CAmountInitialValue.toStringAsFixed(2)) {
-        CAmountValue = CAmountInitialValue;
       }
       formula();
     });
@@ -473,12 +628,9 @@ class _SalaryPageState extends State<SalaryPage> with SingleTickerProviderStateM
           extentOffset: DViolationsText.length,
         ),
       );
-      DViolationsValue = CurrencyFormatter.getUnformattedValue();
+      DViolationsValue = num.tryParse(DViolationsController.text.replaceAll(',', '')) ?? 0;
       if (DViolationsController.text == "") {
         DViolationsController.text = "0.00";
-      } else if (DViolationsController.text ==
-          DViolationsInitialValue.toStringAsFixed(2)) {
-        DViolationsValue = DViolationsInitialValue;
       }
       formula();
     });
@@ -493,12 +645,9 @@ class _SalaryPageState extends State<SalaryPage> with SingleTickerProviderStateM
           extentOffset: DPhilHealthText.length,
         ),
       );
-      DPhilHealthValue = CurrencyFormatter.getUnformattedValue();
+      DPhilHealthValue = num.tryParse(DPhilHealthController.text.replaceAll(',', '')) ?? 0;
       if (DPhilHealthController.text == "") {
         DPhilHealthController.text = "0.00";
-      } else if (DPhilHealthController.text ==
-          DPhilHealthInitialValue.toStringAsFixed(2)) {
-        DPhilHealthValue = DPhilHealthInitialValue;
       }
       formula();
     });
@@ -513,11 +662,9 @@ class _SalaryPageState extends State<SalaryPage> with SingleTickerProviderStateM
           extentOffset: DSSSText.length,
         ),
       );
-      DSSSValue = CurrencyFormatter.getUnformattedValue();
+      DSSSValue = num.tryParse(DSSSController.text.replaceAll(',', '')) ?? 0;
       if (DSSSController.text == "") {
         DSSSController.text = "0.00";
-      } else if (DSSSController.text == DSSSInitialValue.toStringAsFixed(2)) {
-        DSSSValue = DSSSInitialValue;
       }
       formula();
     });
@@ -532,12 +679,9 @@ class _SalaryPageState extends State<SalaryPage> with SingleTickerProviderStateM
           extentOffset: LDeductionText.length,
         ),
       );
-      LDeductionValue = CurrencyFormatter.getUnformattedValue();
+      LDeductionValue = num.tryParse(LDeductionController.text.replaceAll(',', '')) ?? 0;
       if (LDeductionController.text == "") {
         LDeductionController.text = "0.00";
-      } else if (LDeductionController.text ==
-          LDeductionInitialValue.toStringAsFixed(2)) {
-        LDeductionValue = LDeductionInitialValue;
       }
       formula();
     });
@@ -552,12 +696,9 @@ class _SalaryPageState extends State<SalaryPage> with SingleTickerProviderStateM
           extentOffset: CAdvanceText.length,
         ),
       );
-      CAdvanceValue = CurrencyFormatter.getUnformattedValue();
+      CAdvanceValue = num.tryParse(CAdvanceController.text.replaceAll(',', '')) ?? 0;
       if (CAdvanceController.text == "") {
         CAdvanceController.text = "0.00";
-      } else if (CAdvanceController.text ==
-          CAdvanceInitialValue.toStringAsFixed(2)) {
-        CAdvanceValue = CAdvanceInitialValue;
       }
       formula();
     });
@@ -574,12 +715,9 @@ class _SalaryPageState extends State<SalaryPage> with SingleTickerProviderStateM
                 extentOffset: TSPrintPercentageText.length,
               ),
             );
-        TSPrintPercentageValue = PercentageFormatter.getUnformattedValue();
+        TSPrintPercentageValue = num.tryParse(TSPrintPercentageController.text.replaceAll(',', '')) ?? 0;
         if (TSPrintPercentageController.text == "") {
           TSPrintPercentageController.text = "0";
-        } else if (TSPrintPercentageController.text ==
-            TSPrintPercentageInitialValue.toStringAsFixed(0)) {
-          TSPrintPercentageValue = TSPrintPercentageInitialValue;
         } else if (TSPrintPercentageController.text.length > 3) {
           TSPrintPercentageController.text = "999";
           TSPrintPercentageValue = 999;
@@ -600,12 +738,9 @@ class _SalaryPageState extends State<SalaryPage> with SingleTickerProviderStateM
                 extentOffset: TSXeroxPercentageText.length,
               ),
             );
-        TSXeroxPercentageValue = PercentageFormatter.getUnformattedValue();
+        TSXeroxPercentageValue = num.tryParse(TSXeroxPercentageController.text.replaceAll(',', '')) ?? 0;
         if (TSXeroxPercentageController.text == "") {
           TSXeroxPercentageController.text = "0";
-        } else if (TSXeroxPercentageController.text ==
-            TSXeroxPercentageInitialValue.toStringAsFixed(0)) {
-          TSXeroxPercentageValue = TSXeroxPercentageInitialValue;
         } else if (TSXeroxPercentageController.text.length > 3) {
           TSXeroxPercentageController.text = "999";
           TSXeroxPercentageValue = 999;
@@ -628,12 +763,9 @@ class _SalaryPageState extends State<SalaryPage> with SingleTickerProviderStateM
                 extentOffset: TSSuppliesPercentageText.length,
               ),
             );
-        TSSuppliesPercentageValue = PercentageFormatter.getUnformattedValue();
+        TSSuppliesPercentageValue = num.tryParse(TSSuppliesPercentageController.text.replaceAll(',', '')) ?? 0;
         if (TSSuppliesPercentageController.text == "") {
           TSSuppliesPercentageController.text = "0";
-        } else if (TSSuppliesPercentageController.text ==
-            TSSuppliesPercentageInitialValue.toStringAsFixed(0)) {
-          TSSuppliesPercentageValue = TSSuppliesPercentageInitialValue;
         } else if (TSSuppliesPercentageController.text.length > 3) {
           TSSuppliesPercentageController.text = "999";
           TSSuppliesPercentageValue = 999;
@@ -654,12 +786,9 @@ class _SalaryPageState extends State<SalaryPage> with SingleTickerProviderStateM
                 extentOffset: TSPartyPercentageText.length,
               ),
             );
-        TSPartyPercentageValue = PercentageFormatter.getUnformattedValue();
+        TSPartyPercentageValue = num.tryParse(TSPartyPercentageController.text.replaceAll(',', '')) ?? 0;
         if (TSPartyPercentageController.text == "") {
           TSPartyPercentageController.text = "0";
-        } else if (TSPartyPercentageController.text ==
-            TSPartyPercentageInitialValue.toStringAsFixed(0)) {
-          TSPartyPercentageValue = TSPartyPercentageInitialValue;
         } else if (TSPartyPercentageController.text.length > 3) {
           TSPartyPercentageController.text = "999";
           TSPartyPercentageValue = 999;
@@ -1979,6 +2108,7 @@ class _SalaryPageState extends State<SalaryPage> with SingleTickerProviderStateM
                                       isDense: true,
                                     ),
                                     onSelected: (String? staffId) {
+                                      if (staffId == null) return;
                                       setState(() {
                                         _selectedStaffId = staffId;
                                         final selectedStaff = _staffList.firstWhere(
@@ -1994,24 +2124,9 @@ class _SalaryPageState extends State<SalaryPage> with SingleTickerProviderStateM
                                             .toLowerCase()
                                             .contains('full');
 
-                                        // ✅ RESET INPUTS WHEN STAFF CHANGES
-                                        TSPrintController.text = TSPrintInitialValue.toStringAsFixed(2);
-                                        TSXeroxController.text = TSXeroxInitialValue.toStringAsFixed(2);
-                                        TSSuppliesController.text = TSSuppliesInitialValue.toStringAsFixed(2);
-                                        TSPartyController.text = TSPartyInitialValue.toStringAsFixed(2);
-                                        CAmountController.text = CAmountInitialValue.toStringAsFixed(2);
-                                        DViolationsController.text = DViolationsInitialValue.toStringAsFixed(2);
-                                        DPhilHealthController.text = DPhilHealthInitialValue.toStringAsFixed(2);
-                                        DSSSController.text = DSSSInitialValue.toStringAsFixed(2);
-                                        LDeductionController.text = LDeductionInitialValue.toStringAsFixed(2);
-                                        CAdvanceController.text = CAdvanceInitialValue.toStringAsFixed(2);
-                                        
-                                        TSPrintPercentageController.text = TSPrintPercentageInitialValue.toStringAsFixed(0);
-                                        TSXeroxPercentageController.text = TSXeroxPercentageInitialValue.toStringAsFixed(0);
-                                        TSSuppliesPercentageController.text = TSSuppliesPercentageInitialValue.toStringAsFixed(0);
-                                        TSPartyPercentageController.text = TSPartyPercentageInitialValue.toStringAsFixed(0);
-
-                                        formula();
+                                        // ✅ FETCH REAL-TIME DATA INSTEAD OF JUST RESETTING
+                                        _fetchLatestSalary(staffId);
+                                        _subscribeToSalaryChanges(staffId);
                                       });
                                     },
                                     selectOnly: true,
@@ -2293,7 +2408,7 @@ class _SalaryPageState extends State<SalaryPage> with SingleTickerProviderStateM
                               Colors.green,
                             ),
                           ),
-                          onPressed: () {},
+                          onPressed: _saveSalaryToDatabase,
                           child: Text(
                             'Save',
                             style: GoogleFonts.baiJamjuree(
